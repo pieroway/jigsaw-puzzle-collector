@@ -1,0 +1,62 @@
+/* Decorative photographs sit behind real headings and never capture input. */
+.collection-heading {
+  --collection-header-photo:url('/images/collection-header-light.webp');
+  position:relative;
+  isolation:isolate;
+  min-height:220px;
+  margin:-36px -38px 0;
+  padding:32px 38px 36px;
+  gap:12px;
+  display:grid;
+  grid-template-columns:minmax(0,1fr) 40px;
+  align-content:center;
+  align-items:start;
+}
+html[data-theme=dark] .collection-heading {
+  --collection-header-photo:url('/images/collection-header-dark.webp');
+}
+html[data-theme=dark] .collection-heading + .stats {--count-box-border:#15161B}
+.collection-heading::before {
+  content:"";
+  position:absolute;
+  z-index:-1;
+  inset:0;
+  pointer-events:none;
+  background-image:linear-gradient(90deg,var(--bg) 0%,color-mix(in srgb,var(--bg) 94%,transparent) 30%,color-mix(in srgb,var(--bg) 60%,transparent) 58%,transparent 86%),var(--collection-header-photo);
+  background-size:cover;
+  background-position:center 60%;
+  -webkit-mask-image:linear-gradient(#000 75%,transparent);
+  mask-image:linear-gradient(#000 75%,transparent);
+}
+.collection-heading > div,.collection-heading .round-icon {transform:translateY(-20px)}
+.collection-heading .eyebrow {line-height:12px}
+.collection-heading .round-icon {align-self:start;margin-top:-14px}
+@media (min-width:901px) {
+  .collection-heading .round-icon {align-self:start;margin-top:19px}
+}
+.collection-heading p {color:var(--text);opacity:.8;margin-bottom:0;max-width:270px}
+.collection-heading + .stats {
+  --count-box-border:#F4F1EA;
+  position:relative;
+  z-index:1;
+  margin-top:-50px;
+}
+.collection-heading + .stats > div {
+  border:6px solid var(--count-box-border);
+  padding:14px;
+}
+@media (max-width:900px), (max-height:600px) and (pointer:coarse) {
+  .collection-heading {
+    margin-left:calc(-1 * max(var(--page-inline),var(--safe-left)));
+    margin-right:calc(-1 * max(var(--page-inline),var(--safe-right)));
+    padding-left:max(var(--page-inline),var(--safe-left));
+    padding-right:max(var(--page-inline),var(--safe-right));
+  }
+}
+@media (max-width:600px) {
+  .collection-heading {min-height:200px;margin-top:-28px;padding-top:28px;padding-bottom:30px;gap:8px}
+  .collection-heading .round-icon {align-self:start;margin-top:12px}
+  .collection-heading .eyebrow {max-width:220px;font-size:9px;letter-spacing:1.7px}
+  .collection-heading + .stats {margin-top:-46px}
+  .collection-heading + .stats > div {padding:8px 6px}
+}

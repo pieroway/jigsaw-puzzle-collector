@@ -1,0 +1,206 @@
+{
+  "schema_version": "0.1",
+  "note": "Provisional photo-derived records; not independently catalogue-verified. Do not publish without owner approval and human review.",
+  "puzzles": [
+    {
+      "import_id": "sample-001",
+      "photo": "photos/puzzle-01.jpg",
+      "title": "Scooby-Doo! Where Are You?",
+      "manufacturer_or_brand": "Aquarius",
+      "piece_count": 500,
+      "visible_series_or_description": "Scooby-Doo / Mystery Machine",
+      "product_number": null,
+      "release_year": null,
+      "edition_verified": false,
+      "identification_confidence": "high",
+      "review_status": "needs_review",
+      "owner_copy": {
+        "condition": null,
+        "sealed": null,
+        "complete": null,
+        "storage_location": null
+      },
+      "source": "front_box_photo"
+    },
+    {
+      "import_id": "sample-002",
+      "photo": "photos/puzzle-02.jpg",
+      "title": "City garden bench (title unverified)",
+      "manufacturer_or_brand": "Ravensburger",
+      "piece_count": 500,
+      "visible_series_or_description": "Urban garden with flowers and wooden bench",
+      "product_number": null,
+      "release_year": null,
+      "edition_verified": false,
+      "identification_confidence": "medium",
+      "review_status": "needs_review",
+      "owner_copy": {
+        "condition": null,
+        "sealed": null,
+        "complete": null,
+        "storage_location": null
+      },
+      "source": "front_box_photo"
+    },
+    {
+      "import_id": "sample-003",
+      "photo": "photos/puzzle-03.jpg",
+      "title": "United States of America",
+      "manufacturer_or_brand": "Buffalo Games",
+      "piece_count": 1000,
+      "visible_series_or_description": "Colorful Country series",
+      "product_number": null,
+      "release_year": null,
+      "edition_verified": false,
+      "identification_confidence": "high",
+      "review_status": "needs_review",
+      "owner_copy": {
+        "condition": null,
+        "sealed": null,
+        "complete": null,
+        "storage_location": null
+      },
+      "source": "front_box_photo"
+    },
+    {
+      "import_id": "sample-004",
+      "photo": "photos/puzzle-04.jpg",
+      "title": "Christmas village scene (title unverified)",
+      "manufacturer_or_brand": "Ravensburger",
+      "piece_count": 1000,
+      "visible_series_or_description": "Christmas Limited Edition",
+      "product_number": null,
+      "release_year": null,
+      "edition_verified": false,
+      "identification_confidence": "medium",
+      "review_status": "needs_review",
+      "owner_copy": {
+        "condition": null,
+        "sealed": null,
+        "complete": null,
+        "storage_location": null
+      },
+      "source": "front_box_photo"
+    },
+    {
+      "import_id": "sample-005",
+      "photo": "photos/puzzle-05.jpg",
+      "title": "Donuts (title unverified)",
+      "manufacturer_or_brand": "Ceaco",
+      "piece_count": 750,
+      "visible_series_or_description": "Colorstory",
+      "product_number": null,
+      "release_year": null,
+      "edition_verified": false,
+      "identification_confidence": "medium",
+      "review_status": "needs_review",
+      "owner_copy": {
+        "condition": null,
+        "sealed": null,
+        "complete": null,
+        "storage_location": null
+      },
+      "source": "front_box_photo"
+    },
+    {
+      "import_id": "sample-006",
+      "photo": "photos/puzzle-06.jpg",
+      "title": "General Store",
+      "manufacturer_or_brand": "Coca-Cola",
+      "piece_count": 3000,
+      "visible_series_or_description": "Coca-Cola branded jigsaw; manufacturer not visible",
+      "product_number": null,
+      "release_year": null,
+      "edition_verified": false,
+      "identification_confidence": "medium",
+      "review_status": "needs_review",
+      "owner_copy": {
+        "condition": null,
+        "sealed": null,
+        "complete": null,
+        "storage_location": null
+      },
+      "source": "front_box_photo"
+    },
+    {
+      "import_id": "sample-007",
+      "photo": "photos/puzzle-07.jpg",
+      "title": "Candy for All Seasons",
+      "manufacturer_or_brand": "White Mountain",
+      "piece_count": 1000,
+      "visible_series_or_description": "Artwork credited to Lewis T. Johnson",
+      "product_number": null,
+      "release_year": null,
+      "edition_verified": false,
+      "identification_confidence": "high",
+      "review_status": "needs_review",
+      "owner_copy": {
+        "condition": null,
+        "sealed": null,
+        "complete": null,
+        "storage_location": null
+      },
+      "source": "front_box_photo"
+    },
+    {
+      "import_id": "sample-008",
+      "photo": "photos/puzzle-08.jpg",
+      "title": "Harry Potter",
+      "manufacturer_or_brand": "Aquarius",
+      "piece_count": 1000,
+      "visible_series_or_description": "Character montage; 51 \u00d7 71 cm",
+      "product_number": null,
+      "release_year": null,
+      "edition_verified": false,
+      "identification_confidence": "high",
+      "review_status": "needs_review",
+      "owner_copy": {
+        "condition": null,
+        "sealed": null,
+        "complete": null,
+        "storage_location": null
+      },
+      "source": "front_box_photo"
+    },
+    {
+      "import_id": "sample-009",
+      "photo": "photos/puzzle-09.jpg",
+      "title": "Gingerbread house (title unverified)",
+      "manufacturer_or_brand": "Springbok",
+      "piece_count": 500,
+      "visible_series_or_description": "Holiday gingerbread house and candy",
+      "product_number": null,
+      "release_year": null,
+      "edition_verified": false,
+      "identification_confidence": "medium",
+      "review_status": "needs_review",
+      "owner_copy": {
+        "condition": null,
+        "sealed": null,
+        "complete": null,
+        "storage_location": null
+      },
+      "source": "front_box_photo"
+    },
+    {
+      "import_id": "sample-010",
+      "photo": "photos/puzzle-10.jpg",
+      "title": "Yoda",
+      "manufacturer_or_brand": "Buffalo Games",
+      "piece_count": 1000,
+      "visible_series_or_description": "Star Wars Photomosaics Series I",
+      "product_number": null,
+      "release_year": null,
+      "edition_verified": false,
+      "identification_confidence": "high",
+      "review_status": "needs_review",
+      "owner_copy": {
+        "condition": null,
+        "sealed": null,
+        "complete": null,
+        "storage_location": null
+      },
+      "source": "front_box_photo"
+    }
+  ]
+}

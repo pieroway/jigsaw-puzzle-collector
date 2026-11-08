@@ -1,0 +1,108 @@
+import { test, expect } from '@playwright/test';
+
+test('ten photos: edit, review, resume, import privately and retry safely', async ({ page }) => {
+  test.setTimeout(180000);
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.emulateMedia({ colorScheme: 'dark', reducedMotion: 'reduce' });
+  await page.goto('/');
+  await page.getByRole('button', { name: 'Log in', exact: true }).click();
+  await page.getByLabel('Email').fill(`import-${Date.now()}@example.test`);
+  await page.getByLabel('Password', { exact: true }).fill('Fixture collector password 42!');
+  await page.getByRole('button', { name: 'Create private account' }).click();
+  await expect(page.getByRole('button',{name:'Sign out',exact:true})).toBeVisible();
+  await page.getByRole('button', { name: 'Add', exact: true }).last().click();
+  await page.getByRole('button', { name: 'New photo batch' }).click();
+  await expect(page.getByLabel('Choose puzzle photos')).toBeEnabled();
+  await page.getByLabel('Choose puzzle photos').setInputFiles(Array.from({ length: 10 }, (_, i) => `/fixtures/photos/puzzle-${String(i + 1).padStart(2, '0')}.jpg`));
+  // Every photo now runs four bounded local OCR evaluations before image review.
+  await expect(page.getByTestId('count-image_review')).toHaveText('10', { timeout:120000 });
+  await page.reload();
+  await expect(page.getByTestId('count-image_review')).toHaveText('10');
+  for(const card of await page.getByTestId('import-item').all()) await card.getByRole('button',{name:'Use processed image',exact:true}).click();
+  await expect(page.getByTestId('count-needs_review')).toHaveText('10');
+  const second = page.getByTestId('import-item').nth(1);
+  await second.getByLabel('Title', { exact: true }).fill('My corrected garden title');
+  await second.getByRole('button', { name: 'Save review' }).click();
+  await expect(second.getByLabel('Title', { exact: true })).toHaveValue('My corrected garden title');
+  await second.screenshot({ path:'artifacts/import-review-dark.png' });
+  for (const card of await page.getByTestId('import-item').all()) {
+    await card.getByLabel('I reviewed this photo and its fields').check();
+  }
+  await page.getByRole('button', { name: 'Approve reviewed records' }).click();
+  await expect(page.getByTestId('count-approved')).toHaveText('10',{timeout:15000});
+  await page.getByRole('button', { name: 'Import approved copies' }).click();
+  await expect(page.getByTestId('count-imported')).toHaveText('10');
+  await page.getByRole('button', { name: 'Import approved copies' }).click();
+  await expect(page.getByTestId('count-imported')).toHaveText('10');
+  await page.getByRole('button', { name: 'View private collection' }).click();
+  await expect(page.getByTestId('private-copy')).toHaveCount(10);
+  await expect(page.getByTestId('private-copy').first().locator('.collection-art')).toHaveClass(/studio-surface/);
+  await expect(page.getByText('My corrected garden title')).toBeVisible();
+  await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');
+  await expect(page.locator('html')).toHaveAttribute('data-reduced-motion', 'true');
+  await page.getByTestId('private-copy').first().click();
+  await expect(page.locator('.import-detail')).toHaveCSS('animation-duration','0.12s');
+  await expect(page.getByRole('button',{name:'Studio',exact:true})).toHaveAttribute('aria-pressed','true');
+  await page.getByRole('button',{name:'Corrected Front',exact:true}).click();
+  await expect(page.locator('.import-detail>img')).toHaveAttribute('src',/processed-image/);
+  await page.getByRole('button',{name:'Original',exact:true}).click();
+  await expect(page.locator('.import-detail>img')).toHaveAttribute('src',/original-image/);
+  await page.getByRole('button',{name:'Studio',exact:true}).click();
+  await expect(page.locator('.import-detail>img')).toHaveAttribute('src',/studio-image/);
+  await page.keyboard.press('Escape');
+  await expect(page.getByTestId('private-copy').first()).toBeFocused();
+});
+
+test('invalid photos show actionable errors and can be retried without adding an item', async ({ page }) => {
+  const session = await (await page.request.get('/api/session')).json();
+  const register = await page.request.post('/api/auth/register', { headers: { 'X-CSRF-Token':session.csrf }, data: { email:`retry-${Date.now()}@example.test`, password:'private collector fixture password' } });
+  expect(register.status()).toBe(201);
+  await page.goto('/');
+  await page.getByRole('button', { name:'Add', exact:true }).first().click();
+  await page.getByRole('button', { name:'New photo batch' }).click();
+  await expect(page.getByLabel('Choose puzzle photos')).toBeEnabled();
+  await page.getByLabel('Choose puzzle photos').setInputFiles({ name:'damaged.jpg', mimeType:'image/jpeg', buffer:Buffer.from('<?php echo "not an image";') });
+  await expect(page.getByTestId('count-failed')).toHaveText('1');
+  await expect(page.getByRole('alert')).toContainText('not a supported image');
+  await expect(page.getByLabel('Retry damaged.jpg')).toBeEnabled();
+  await page.getByLabel('Retry damaged.jpg').setInputFiles('/fixtures/photos/puzzle-01.jpg');
+  await expect(page.getByTestId('count-image_review')).toHaveText('1',{timeout:30000});
+  await page.getByRole('button',{name:'Keep original photo',exact:true}).click();
+  await expect(page.getByTestId('count-needs_review')).toHaveText('1');
+  await expect(page.getByTestId('count-uploaded')).toHaveText('1');
+});
+
+test('interrupted selection resumes without duplicating saved photos; intentional duplicates are flagged', async ({ page }) => {
+  const session = await (await page.request.get('/api/session')).json();
+  expect((await page.request.post('/api/auth/register',{ headers:{ 'X-CSRF-Token':session.csrf },data:{ email:`resume-${Date.now()}@example.test`,password:'private collector fixture password' } })).status()).toBe(201);
+  await page.goto('/');
+  await page.getByRole('button',{ name:'Add',exact:true }).first().click();
+  await page.getByRole('button',{ name:'New photo batch' }).click();
+  await expect(page.getByLabel('Choose puzzle photos')).toBeEnabled();
+  let uploads=0;
+  let signal!: () => void;
+  let release!: () => Promise<void>;
+  const blocked=new Promise<void>(resolve => { signal=resolve; });
+  await page.route('**/api/import-batches/*/photos',async route => {
+    uploads++;
+    if (uploads===2) {
+      signal();
+      await new Promise<void>(resolve => { release=async () => { await route.abort().catch(() => {}); resolve(); }; });
+    } else await route.continue();
+  });
+  const files=[1,2,3].map(n => `/fixtures/photos/puzzle-0${n}.jpg`);
+  await page.getByLabel('Choose puzzle photos').setInputFiles(files);
+  await blocked;
+  await page.reload();
+  await release();
+  await page.unroute('**/api/import-batches/*/photos');
+  await expect(page.getByTestId('count-uploaded')).toHaveText('1');
+  await expect(page.getByLabel('Choose puzzle photos')).toBeEnabled();
+  await page.getByLabel('Choose puzzle photos').setInputFiles(files);
+  await expect(page.getByTestId('count-image_review')).toHaveText('3',{timeout:60000});
+  await expect(page.getByTestId('count-uploaded')).toHaveText('3');
+  await expect(page.getByLabel('Choose puzzle photos')).toBeEnabled();
+  await page.getByLabel('Choose puzzle photos').setInputFiles(files[0]);
+  await expect(page.getByTestId('count-image_review')).toHaveText('4',{timeout:60000});
+  await expect(page.getByTestId('import-item').last().getByText(/exact SHA-256 photo match/)).toBeVisible();
+});

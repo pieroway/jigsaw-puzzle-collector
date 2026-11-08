@@ -1,0 +1,12 @@
+services:
+  db:
+    command: ["--skip-log-bin"]
+    environment:
+      MYSQL_DATABASE: jigsaw_test
+  api:
+    ports: !reset []
+    environment:
+      DB_NAME: jigsaw_test
+      SESSION_COOKIE_SECURE: "0"
+  frontend:
+    ports: !reset []

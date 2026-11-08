@@ -1,0 +1,99 @@
+services:
+  processor:
+    profiles: ["processing"]
+    build: ./processing
+    environment:
+      PROCESSOR_KEY: ${PROCESSOR_KEY:-local-image-processing-only}
+    volumes:
+      - ./processing:/work:ro
+      - ./processing/artifacts:/artifacts
+      - ./docs/fixtures/puzzle-import:/fixtures:ro
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8091/health')"]
+      interval: 5s
+      retries: 20
+  db:
+    image: mysql:8.0
+    environment:
+      MYSQL_DATABASE: ${MYSQL_DATABASE:-jigsaw}
+      MYSQL_USER: ${MYSQL_USER:-jigsaw}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:-local_dev_only}
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-local_root_dev_only}
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./backend/migrations:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "mysql --protocol=TCP -h127.0.0.1 -u$$MYSQL_USER -p$$MYSQL_PASSWORD $$MYSQL_DATABASE -e 'SELECT 1'"]
+      interval: 5s
+      retries: 20
+  api:
+    build: ./backend
+    command: sh -c "mkdir -p /var/lib/jigsaw/photos && chown www-data:www-data /var/lib/jigsaw/photos && chmod 700 /var/lib/jigsaw/photos && php scripts/migrate.php && apache2-foreground"
+    healthcheck:
+      test: ["CMD", "php", "-r", "exit(@file_get_contents('http://localhost/api/health') === false ? 1 : 0);"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+    ports: ["8080:80"]
+    environment:
+      DB_HOST: db
+      DB_NAME: ${MYSQL_DATABASE:-jigsaw}
+      DB_USER: ${MYSQL_USER:-jigsaw}
+      DB_PASSWORD: ${MYSQL_PASSWORD:-local_dev_only}
+      PRIVATE_STORAGE_PATH: /var/lib/jigsaw/photos
+      FIXTURE_PATH: /fixtures
+      IMPORT_STORAGE_QUOTA_BYTES: ${IMPORT_STORAGE_QUOTA_BYTES:-1073741824}
+      SESSION_COOKIE_SECURE: ${SESSION_COOKIE_SECURE:-0}
+      IMAGE_PROCESSOR_URL: ${IMAGE_PROCESSOR_URL-http://processor:8091}
+      PROCESSOR_KEY: ${PROCESSOR_KEY:-local-image-processing-only}
+    depends_on:
+      db:
+        condition: service_healthy
+    volumes:
+      - ./backend:/var/www/html
+      - ./docs/fixtures/puzzle-import:/fixtures:ro
+      - private_photos:/var/lib/jigsaw/photos
+  frontend:
+    image: node:22-alpine
+    working_dir: /app
+    command: sh -c "npm ci && npm run dev -- --host 0.0.0.0"
+    volumes:
+      - ./frontend:/app
+      - frontend_node_modules:/app/node_modules
+    ports: ["5173:5173"]
+    environment:
+      VITE_API_BASE_URL: /api
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:5173').then(r => process.exit(r.ok ? 0 : 1)).catch(() => process.exit(1))"]
+      interval: 5s
+      timeout: 3s
+      retries: 30
+  playwright:
+    profiles: ["test"]
+    image: mcr.microsoft.com/playwright:v1.58.2-noble
+    working_dir: /tests
+    volumes:
+      - ./tests/e2e:/tests
+      - ./docs/fixtures/puzzle-import:/fixtures:ro
+      - playwright_node_modules:/tests/node_modules
+    environment:
+      BASE_URL: http://frontend:5173
+    command: sh -c "npm ci && npx playwright test"
+    depends_on:
+      frontend:
+        condition: service_healthy
+      api:
+        condition: service_healthy
+  k6:
+    profiles: ["test"]
+    image: grafana/k6:0.54.0
+    volumes:
+      - ./tests/load:/scripts:ro
+    environment:
+      BASE_URL: http://api
+    depends_on: [api]
+volumes:
+  private_photos:
+  playwright_node_modules:
+  mysql_data:
+  frontend_node_modules:

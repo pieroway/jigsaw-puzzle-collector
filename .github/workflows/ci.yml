@@ -1,0 +1,19 @@
+name: Baseline quality checks
+on:
+  push:
+  pull_request:
+jobs:
+  checks:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Start services
+        run: cp .env.example .env && make dev
+      - name: Full quality gate against isolated test services
+        run: make ci
+      - name: Shutdown
+        if: always()
+        run: |
+          docker compose --profile test --profile processing down
+          docker compose -p jigsaw-test -f docker-compose.yml -f compose.test.yml --profile test --profile processing down
+# Production deployment intentionally disabled until full gates are verified.

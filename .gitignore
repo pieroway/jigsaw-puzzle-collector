@@ -1,0 +1,13 @@
+.env
+node_modules/
+frontend/dist/
+frontend/coverage/
+backend/vendor/
+playwright-report/
+test-results/
+.DS_Store
+tests/e2e/artifacts/
+*.tsbuildinfo
+backend/.phpunit.result.cache
+processing/artifacts/
+__pycache__/

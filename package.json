@@ -1,0 +1,6 @@
+{
+  "name": "jigsaw-puzzle-collector",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Local development and quality checks are managed through the Makefile."
+}

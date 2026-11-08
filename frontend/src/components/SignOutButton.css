@@ -1,0 +1,5 @@
+.topline-account{display:flex;align-items:center;gap:12px;min-width:0}
+.sign-out-control{position:relative;flex-shrink:0}
+.sign-out-control button{min-height:36px;padding:7px 11px;border:1px solid var(--border);border-radius:10px;background:var(--surface);color:var(--text);font:inherit;font-size:12px;font-weight:600;letter-spacing:normal;white-space:nowrap}
+.sign-out-control [role=alert]{position:absolute;right:0;top:calc(100% + 8px);z-index:20;width:260px;max-width:75vw;padding:12px;border:1px solid var(--border);border-radius:12px;background:var(--surface);color:var(--text);box-shadow:var(--shadow);font-size:12px;line-height:1.5;letter-spacing:normal}
+@media(max-width:600px){.topline-account.has-account .topline-right{display:none}}

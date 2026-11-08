@@ -1,0 +1,10 @@
+{
+  "depth_presets_mm": {"thin": 25, "standard": 40, "deep": 55},
+  "estimated_long_edge_mm": 300,
+  "camera_presets": {
+    "front": {"yaw_degrees": 0, "pitch_degrees": 0, "roll_degrees": 0, "distance_factor": 12},
+    "three-quarter": {"yaw_degrees": 12, "pitch_degrees": -8, "roll_degrees": 0, "distance_factor": 12}
+  },
+  "box_extent": 0.935,
+  "edge_tint": 0.10
+}

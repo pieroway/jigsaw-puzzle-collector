@@ -1,0 +1,42 @@
+import {test,expect} from '@playwright/test';
+test('manual four-corner review flags low confidence and precedes identification',async({page})=>{
+  const session=await(await page.request.get('/api/session')).json();
+  expect((await page.request.post('/api/auth/register',{headers:{'X-CSRF-Token':session.csrf},data:{email:`corners-${Date.now()}@example.test`,password:'private photo processing password'}})).status()).toBe(201);
+  await page.setViewportSize({width:390,height:844}); await page.emulateMedia({colorScheme:'dark',reducedMotion:'reduce'});
+  await page.goto('/'); await page.getByRole('button',{name:'Add',exact:true}).last().click();
+  await page.getByRole('button',{name:'New photo batch'}).click(); await expect(page.getByLabel('Choose puzzle photos')).toBeEnabled();
+  const pixels=await page.evaluate(()=>{const canvas=document.createElement('canvas'); canvas.width=160;canvas.height=120;const context=canvas.getContext('2d')!;context.fillStyle='#888';context.fillRect(0,0,160,120);return canvas.toDataURL('image/png').split(',')[1];});
+  await page.getByLabel('Choose puzzle photos').setInputFiles({name:'low-contrast.png',mimeType:'image/png',buffer:Buffer.from(pixels,'base64')});
+  await expect(page.getByTestId('count-image_review')).toHaveText('1',{timeout:30000});
+  await expect(page.getByText(/Low-confidence corner detection/)).toBeVisible();
+  await expect(page.getByText(/Orientation needs review/)).toBeVisible();
+  await expect(page.getByLabel('Title',{exact:true})).toHaveCount(0);
+  for(const [corner,x,y] of [['Top left',10,10],['Top right',90,10],['Bottom right',90,90],['Bottom left',10,90]] as const) {
+    await page.getByLabel(`${corner} X (%)`,{exact:true}).fill(String(x)); await page.getByLabel(`${corner} Y (%)`,{exact:true}).fill(String(y));
+  }
+  await page.getByRole('button',{name:'Apply corners'}).click();
+  await expect(page.getByText('Manually adjusted corners',{exact:false})).toBeVisible();
+  await expect(page.getByText(/Low-confidence corner detection/)).toHaveCount(0);
+  await page.getByRole('button',{name:'Top left corner handle',exact:true}).focus(); await page.keyboard.press('ArrowRight');
+  await expect(page.getByLabel('Top left X (%)',{exact:true})).toHaveValue('11');
+  await page.getByRole('button',{name:'Apply corners'}).click();
+  await expect(page.getByRole('button',{name:'Use processed image'})).toBeEnabled();
+  await page.getByLabel('Box depth',{exact:true}).selectOption('deep');
+  await page.getByLabel('Studio background',{exact:true}).selectOption('light');
+  await page.getByRole('button',{name:'Apply presentation',exact:true}).click();
+  await expect(page.getByText(/55 mm/)).toBeVisible();
+  await page.getByRole('button',{name:'Rotate Right',exact:true}).click();
+  await expect(page.getByText(/Manual orientation saved \(90° clockwise\)/)).toBeVisible();
+  await page.reload();
+  await expect(page.getByLabel('Box depth',{exact:true})).toHaveValue('deep');
+  await expect(page.getByText(/Manual orientation saved \(90° clockwise\)/)).toBeVisible();
+  await page.getByRole('button',{name:'Detect corners again',exact:true}).click();
+  await expect(page.getByRole('button',{name:'Use processed image'})).toBeEnabled();
+  await expect(page.getByText(/Manual orientation saved \(90° clockwise\)/)).toBeVisible();
+  await page.getByRole('button',{name:'Use processed image'}).click();
+  await expect(page.getByTestId('count-needs_review')).toHaveText('1');
+  await expect(page.getByLabel('Title',{exact:true})).toBeVisible();
+  await expect(page.locator('html')).toHaveAttribute('data-theme','dark');
+  await expect(page.locator('html')).toHaveAttribute('data-reduced-motion','true');
+  await page.screenshot({path:'artifacts/preprocessing-dark.png'});
+});
