@@ -15,6 +15,8 @@ For another device on the same Wi-Fi, open `http://<this-PC-Wi-Fi-IPv4>:5173`. V
 
 ## Included
 
+- **Home:** private collection-wide totals, six recent puzzles with shared details, and up to three actionable import batches with direct resume. Signed-out welcome/sample browsing, empty states and retry controls use existing light/dark and mobile layouts.
+
 - **Studio presentation:** manufacturer-aware upright orientation, saved manual rotations, configurable millimetre box depths and cameras, transparent WebP assets, private studio gallery images and Original/Corrected/Studio details. See [the studio guide](docs/STUDIO-PRESENTATION.md). During development use `make test-unit-dev` before `make dev`; reserve the full quality gate for production promotion.
 
 - **Photo preprocessing:** optional OpenCV processing, PHP/GD shared-hosting fallback, four-corner editing, before/after review and preserved originals. See [image preprocessing](docs/IMAGE-PREPROCESSING.md). Use `make dev-php` for development without Python.

@@ -1,11 +1,11 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { api } from './api';
 import {ArrowUpDown,ChevronDown,Grid2X2,List,Plus,Search,Settings2,SlidersHorizontal,X} from 'lucide-react';
-type Copy = { id: number; edition_id: number; title: string; manufacturer: string | null; piece_count: number | null; release_year: number | null; sku: string | null; image_url: string; studio_image_url?:string|null;corrected_image_url?:string|null;original_image_url?:string|null;original_download_url?:string|null;uses_studio?:boolean;studio_background?:string;default_view?:'studio'|'corrected'|'original';visibility: string; box_condition: string | null; seal_status: string | null; completeness: string | null; provenance: { suggestion: { catalogue_verified: boolean } } };
+import {PrivateCopyDetails,type Copy} from './PrivateCopyDetails';
 const makerKey=(value:string|null)=>value?.trim()?`brand:${value.trim().toLocaleLowerCase()}`:'unknown';
 export function PrivateCollection({ onAdd,onSettings }: { onAdd: () => void;onSettings?:()=>void }) {
   const [copies,setCopies] = useState<Copy[]>([]); const [selected,setSelected] = useState<Copy | null>(null);
-  const [view,setView]=useState<'studio'|'corrected'|'original'>('studio');
+
   const [query,setQuery] = useState(''); const [error,setError] = useState(''); const [loaded,setLoaded] = useState(false);
   const [layout,setLayout]=useState<'gallery'|'list'>('gallery');
   const [maker,setMaker]=useState('all');const [pieces,setPieces]=useState('all');
@@ -19,7 +19,7 @@ export function PrivateCollection({ onAdd,onSettings }: { onAdd: () => void;onSe
   const visible=copies.filter(copy=>(maker==='all'||makerKey(copy.manufacturer)===maker)&&(pieces==='all'||(pieces==='unknown'?!copy.piece_count:Number(copy.piece_count)===Number(pieces)))&&`${copy.title} ${copy.manufacturer??''} ${copy.piece_count??''} ${copy.sku??''} ${copy.release_year??''}`.toLocaleLowerCase().includes(search)).sort((a,b)=>sort==='title'?a.title.localeCompare(b.title,undefined,{sensitivity:'base'}):sort==='pieces'?(Number(a.piece_count)||Infinity)-(Number(b.piece_count)||Infinity)||a.title.localeCompare(b.title):Number(b.id)-Number(a.id));
   function clearFilters(){setQuery('');setMaker('all');setPieces('all');}
   const root = useRef<HTMLDivElement>(null); const scroll = useRef(0); const returnCopy = useRef<number | null>(null);
-  function open(copy: Copy) { scroll.current = root.current?.closest('.scroll-area')?.scrollTop ?? 0; returnCopy.current = copy.id; setView(copy.default_view??'original');setSelected(copy); }
+  function open(copy: Copy) { scroll.current = root.current?.closest('.scroll-area')?.scrollTop ?? 0; returnCopy.current = copy.id; setSelected(copy); }
   useLayoutEffect(() => {
     const scroller = root.current?.closest('.scroll-area');
     if (selected) { if (scroller) scroller.scrollTop = 0; root.current?.querySelector<HTMLButtonElement>('.back-button')?.focus(); }
@@ -30,12 +30,7 @@ export function PrivateCollection({ onAdd,onSettings }: { onAdd: () => void;onSe
   return <div className="private-collection" ref={root}>
     {error && <p role="alert" className="import-error">{error}</p>}
     {!loaded && <p role="status">Opening your collection…</p>}
-    {selected ? <section className="import-detail"><button className="back-button" onClick={() => setSelected(null)}>← Collection</button>
-      <div className="import-actions" role="group" aria-label="Photograph view">{([['studio','Studio',selected.studio_image_url],['corrected','Corrected Front',selected.corrected_image_url],['original','Original',selected.original_image_url]] as const).map(([key,label,url])=><button key={key} disabled={!url} aria-pressed={view===key} onClick={()=>setView(key)}>{label}</button>)}</div>
-      <img className={view==='studio'?'studio-surface':undefined} data-background={selected.studio_background} src={(view==='studio'?selected.studio_image_url:view==='corrected'?selected.corrected_image_url:selected.original_image_url)??selected.image_url} alt={`${view==='studio'?'Studio presentation':view==='corrected'?'Corrected front':'Original photograph'} of ${selected.title}`} />
-      {view==='studio'&&<p>Sides and shadows are simulated; the front uses your corrected photograph.</p>}
-      {selected.original_download_url&&<a href={selected.original_download_url}>Download untouched original</a>}
-      <h1 className="private-detail-title">{selected.title}</h1><p>{selected.manufacturer ?? 'Unknown manufacturer'} · {selected.piece_count ?? 'Unknown'} pieces</p><dl>{[['Product number',selected.sku],['Release year',selected.release_year],['Condition',selected.box_condition],['Seal',selected.seal_status],['Completeness',selected.completeness]].map(([label,value]) => <div key={String(label)}><dt>{label}</dt><dd>{value ?? 'Unknown'}</dd></div>)}</dl><p>Private copy #{selected.id} · Edition #{selected.edition_id}. Human reviewed; not automatically catalogue verified.</p></section> : <>
+    {selected ? <PrivateCopyDetails copy={selected} onBack={()=>setSelected(null)}/> : <>
       <header className="page-heading collection-heading"><div><div className="eyebrow">YOUR LITTLE CORNER OF WONDER</div><h1>My Collection<span className="title-dot">.</span></h1><p>Every puzzle has a story worth keeping.</p></div>{onSettings&&<button className="round-icon" aria-label="Collection settings" onClick={onSettings}><Settings2 size={20}/></button>}</header>
       <div className="stats" role="group" aria-label="Collection totals">
         <div><span className="stats-icon" aria-hidden="true">✦</span><strong>{loaded?copies.length.toLocaleString():'—'}</strong><small>Puzzles</small></div>

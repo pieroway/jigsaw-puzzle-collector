@@ -11,6 +11,15 @@ beforeEach(()=>{
   vi.mocked(session).mockResolvedValue({user:{id:1,email:'collector@example.test'},csrf:'token'});
 });
 afterEach(cleanup);
+it('resumes the Home-selected batch instead of the saved or newest batch',async()=>{
+  localStorage.setItem('jigsaw-import-batch','7');
+  vi.mocked(api).mockResolvedValueOnce({batches:[{id:7,created_at:batch.created_at}]}).mockResolvedValueOnce({...batch,id:42});
+  render(<ImportWorkspace initialBatchId={42} onViewCollection={vi.fn()} onSession={vi.fn()}/>);
+  await screen.findByRole('button',{name:'Delete batch'});
+  expect(api).toHaveBeenCalledWith('/import-batches/42');expect(api).not.toHaveBeenCalledWith('/import-batches/7');
+  expect(localStorage.getItem('jigsaw-import-batch')).toBe('42');
+  expect((screen.getByRole('combobox',{name:'Resume batch'}) as HTMLSelectElement).value).toBe('42');
+});
 it('never offers login or import controls when the session is signed out',async()=>{
   vi.mocked(session).mockResolvedValue({user:null,csrf:'guest-token'});
   render(<ImportWorkspace onViewCollection={vi.fn()} onSession={vi.fn()}/>);

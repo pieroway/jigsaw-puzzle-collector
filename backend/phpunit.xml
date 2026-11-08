@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <phpunit bootstrap="vendor/autoload.php" colors="true" failOnWarning="true">
   <testsuites>
-    <testsuite name="unit"><file>tests/SmokeTest.php</file><file>tests/ImportRulesTest.php</file><file>tests/PreprocessingTest.php</file><file>tests/BatchDeletionTest.php</file></testsuite>
+    <testsuite name="unit"><file>tests/SmokeTest.php</file><file>tests/ImportRulesTest.php</file><file>tests/PreprocessingTest.php</file><file>tests/BatchDeletionTest.php</file><file>tests/HomeSummaryTest.php</file></testsuite>
     <testsuite name="integration"><file>tests/IntegrationTest.php</file><file>tests/ImportApiTest.php</file></testsuite>
   </testsuites>
 </phpunit>

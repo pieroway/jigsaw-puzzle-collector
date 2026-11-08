@@ -5,10 +5,11 @@ import './import.css';
 import { ImageReview } from './ImageReview';
 import {DeleteBatchButton} from './DeleteBatchButton';
 
-type Props = { onViewCollection: () => void; onSession: (signedIn: boolean) => void };
+type Props = { onViewCollection: () => void; onSession: (signedIn: boolean) => void; initialBatchId?:number|null };
 type Pending = { key: string; name: string; file?: File; state: 'uploading' | 'failed'; error?: string };
 const retryKey = () => crypto.randomUUID?.() ?? `photo-${Date.now()}-${Math.random().toString(36).slice(2)}`;
-export function ImportWorkspace({ onViewCollection, onSession }: Props) {
+export function ImportWorkspace({ onViewCollection, onSession,initialBatchId }: Props) {
+  const requestedBatch=useRef(initialBatchId);
   const [account, setAccount] = useState<Session | null>(null);
   const [batches, setBatches] = useState<{ id: number; created_at: string }[]>([]);
   const [batch, setBatch] = useState<Batch | null>(null);
@@ -24,8 +25,12 @@ export function ImportWorkspace({ onViewCollection, onSession }: Props) {
   async function list() {
     const result = await api<{ batches: { id: number; created_at: string }[];cleanup_pending?:number }>('/import-batches'); setBatches(result.batches);setCleanupPending(result.cleanup_pending??0);
     const saved = Number(localStorage.getItem('jigsaw-import-batch'));
-    const id = result.batches.find(x => x.id === saved)?.id ?? result.batches[0]?.id;
-    if (id) await load(id);
+    const id = requestedBatch.current ?? result.batches.find(x => x.id === saved)?.id ?? result.batches[0]?.id;
+    requestedBatch.current=null;
+    if (id) {
+      const value=await load(id);
+      if(!result.batches.some(batch=>batch.id===id))setBatches([{id:value.id,created_at:value.created_at},...result.batches]);
+    }
     else {setBatch(null);batchRef.current=null;localStorage.removeItem('jigsaw-import-batch');}
   }
   useEffect(() => {

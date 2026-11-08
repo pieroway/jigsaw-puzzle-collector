@@ -1,0 +1,12 @@
+import {useState} from 'react';
+export type Copy = { id: number; edition_id: number; title: string; manufacturer: string | null; piece_count: number | null; release_year: number | null; sku: string | null; image_url: string; studio_image_url?:string|null;corrected_image_url?:string|null;original_image_url?:string|null;original_download_url?:string|null;uses_studio?:boolean;studio_background?:string;default_view?:'studio'|'corrected'|'original';visibility: string; box_condition: string | null; seal_status: string | null; completeness: string | null; provenance: { suggestion: { catalogue_verified: boolean } } };
+export function PrivateCopyDetails({copy:selected,onBack,backLabel='Collection'}:{copy:Copy;onBack:()=>void;backLabel?:string}) {
+  const [view,setView]=useState<'studio'|'corrected'|'original'>(selected.default_view??'original');
+  return (<section className="import-detail"><button className="back-button" onClick={onBack}>← {backLabel}</button>
+      <div className="import-actions" role="group" aria-label="Photograph view">{([['studio','Studio',selected.studio_image_url],['corrected','Corrected Front',selected.corrected_image_url],['original','Original',selected.original_image_url]] as const).map(([key,label,url])=><button key={key} disabled={!url} aria-pressed={view===key} onClick={()=>setView(key)}>{label}</button>)}</div>
+      <img className={view==='studio'?'studio-surface':undefined} data-background={selected.studio_background} src={(view==='studio'?selected.studio_image_url:view==='corrected'?selected.corrected_image_url:selected.original_image_url)??selected.image_url} alt={`${view==='studio'?'Studio presentation':view==='corrected'?'Corrected front':'Original photograph'} of ${selected.title}`} />
+      {view==='studio'&&<p>Sides and shadows are simulated; the front uses your corrected photograph.</p>}
+      {selected.original_download_url&&<a href={selected.original_download_url}>Download untouched original</a>}
+      <h1 className="private-detail-title">{selected.title}</h1><p>{selected.manufacturer ?? 'Unknown manufacturer'} · {selected.piece_count ?? 'Unknown'} pieces</p><dl>{[['Product number',selected.sku],['Release year',selected.release_year],['Condition',selected.box_condition],['Seal',selected.seal_status],['Completeness',selected.completeness]].map(([label,value]) => <div key={String(label)}><dt>{label}</dt><dd>{value ?? 'Unknown'}</dd></div>)}</dl><p>Private copy #{selected.id} · Edition #{selected.edition_id}. Human reviewed; not automatically catalogue verified.</p></section>
+  );
+}

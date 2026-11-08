@@ -14,6 +14,14 @@ beforeEach(()=>{
   vi.mocked(session).mockResolvedValue({user:{id:1,email:'collector@example.test'},csrf:'token'});
 });
 afterEach(()=>{cleanup();vi.unstubAllGlobals();});
+it('opens Home from navigation and returns to the private collection',async()=>{
+  vi.mocked(api).mockResolvedValue({totals:{puzzles:0,manufacturers:0,known_pieces:0},batches:[],recent:[]});
+  const user=userEvent.setup();render(<App/>);await screen.findByText('My private puzzles');
+  await user.click(screen.getAllByRole('button',{name:'Home'}).slice(-1)[0]!);
+  await screen.findByText('Your first puzzle belongs here.');
+  expect(api).toHaveBeenCalledWith('/home');
+  await user.click(screen.getByRole('button',{name:'View collection'}));await screen.findByText('My private puzzles');
+});
 
 it('signs out from the collection, closes private views and preserves preferences',async()=>{
   let finish!:(value:unknown)=>void;

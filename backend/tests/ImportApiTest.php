@@ -30,6 +30,31 @@ final class ImportApiTest extends TestCase {
         [$status, $s] = $this->call('POST', '/api/auth/register', ['email'=>$this->email, 'password'=>'collector fixture password 123']);
         self::assertSame(201, $status); $this->csrf = $s['csrf']; $this->user = $s['user']['id'];
     }
+    public function testHomeSummaryHasGlobalTotalsOwnerIsolationAndBoundedRecentItems(): void {
+        [$status,$empty]=$this->call('GET','/api/home');self::assertSame(200,$status);
+        self::assertSame(['puzzles'=>0,'manufacturers'=>0,'known_pieces'=>0],$empty['totals']);
+        $db=Jigsaw\Database::connect();
+        $db->exec("INSERT INTO puzzles(title) VALUES ('Home summary fixture')");$puzzle=(int)$db->lastInsertId();
+        $q=$db->prepare('INSERT INTO editions(puzzle_id,manufacturer,piece_count) VALUES (?,?,?)');$q->execute([$puzzle,' Home Maker ',500]);$edition=(int)$db->lastInsertId();
+        $q=$db->prepare('INSERT INTO owned_copies(user_id,edition_id) VALUES (?,?)');
+        $db->beginTransaction();for($i=0;$i<1001;$i++)$q->execute([$this->user,$edition]);$last=(int)$db->lastInsertId();$db->commit();
+        $q=$db->prepare('INSERT INTO users(email,password_hash) VALUES (?,?)');$q->execute(['home-'.bin2hex(random_bytes(8)).'@example.test','not-a-login-hash']);$other=(int)$db->lastInsertId();
+        $q=$db->prepare('INSERT INTO owned_copies(user_id,edition_id) VALUES (?,?)');$q->execute([$other,$edition]);
+        $active=[];
+        foreach(['image_review','needs_review','failed','approved','imported','rejected'] as $state) {
+            $batch=$this->batch();$q=$db->prepare('INSERT INTO import_items(batch_id,client_key,filename,state) VALUES (?,?,?,?)');$q->execute([$batch,'one','fixture.jpg',$state]);
+            if(!in_array($state,['imported','rejected'],true))$active[]=$batch;
+        }
+        $deleted=$this->batch();$q=$db->prepare("UPDATE import_batches SET deleted_at=UTC_TIMESTAMP() WHERE id=?");$q->execute([$deleted]);
+        $q=$db->prepare("INSERT INTO import_items(batch_id,client_key,filename,state) VALUES (?,'one','fixture.jpg','failed')");$q->execute([$deleted]);
+        $q=$db->prepare('INSERT INTO import_batches(user_id,client_key) VALUES (?,?)');$q->execute([$other,'home-summary']);$foreignBatch=(int)$db->lastInsertId();
+        $q=$db->prepare("INSERT INTO import_items(batch_id,client_key,filename,state) VALUES (?,'one','fixture.jpg','failed')");$q->execute([$foreignBatch]);
+        [$status,$home]=$this->call('GET','/api/home');self::assertSame(200,$status);
+        self::assertSame(['puzzles'=>1001,'manufacturers'=>1,'known_pieces'=>500500],$home['totals']);
+        self::assertCount(6,$home['recent']);self::assertSame($last,(int)$home['recent'][0]['id']);
+        self::assertSame(array_reverse(array_slice($active,-3)),array_column($home['batches'],'id'));
+        $this->cookie='';$this->csrf='';self::assertSame(401,$this->call('GET','/api/home')[0]);
+    }
     private function batch(): int {
         [$status, $batch] = $this->call('POST', '/api/import-batches', ['client_key'=>bin2hex(random_bytes(12))]);
         self::assertSame(201, $status); return $batch['id'];

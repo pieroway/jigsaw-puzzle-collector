@@ -8,6 +8,7 @@ import { session } from './import/api';
 import {SignOutButton} from './components/SignOutButton';
 import {LoginPage} from './components/LoginPage';
 import './collection-header.css';
+import {HomePage} from './components/HomePage';
 
 type Theme = 'system' | 'light' | 'dark';
 type Motion = 'system' | 'on' | 'off';
@@ -27,6 +28,7 @@ export default function App() {
   });
   useEffect(() => { localStorage.setItem('jigsaw-tab',tab); }, [tab]);
   const [signedIn, setSignedIn] = useState(false);
+  const [requestedBatch,setRequestedBatch]=useState<number|null>(null);
   const [sessionReady,setSessionReady]=useState(false);
   const [loginOpen,setLoginOpen]=useState(false);
   const [loginBusy,setLoginBusy]=useState(false);
@@ -107,13 +109,13 @@ export default function App() {
   useEffect(() => { const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape' && selected) closePuzzle(); }; window.addEventListener('keydown', onKey); return () => window.removeEventListener('keydown', onKey); });
   const nav = [{ name: 'Home', icon: Home }, { name: 'Collection', icon: BookOpen }, { name: 'Add', icon: Plus }, { name: 'Explore', icon: Compass }, { name: 'Profile', icon: UserRound }];
   function signedOut() { setSignedIn(false);setLoginOpen(false);setSelected(null);setOverlay(null);setTransitioning(false);setFadingOut(false);setTab('Collection'); }
-  function navigate(name:string) {if(transitioning||loginBusy||(name==='Add'&&!signedIn))return;setLoginOpen(false);setSelected(null);setTab(name);}
+  function navigate(name:string,batchId?:number) {if(transitioning||loginBusy||(name==='Add'&&!signedIn))return;setRequestedBatch(name==='Add'?batchId??null:null);setLoginOpen(false);setSelected(null);setTab(name);}
   return <div className="app-shell" style={{ '--detail-duration': `${speed}ms` } as CSSProperties}>
     <aside className="desktop-sidebar"><div className="brand"><span className="brand-mark">✦</span><div><strong>Jigsaw</strong><small>PUZZLE COLLECTOR</small></div></div><p className="side-caption">Your puzzles, beautifully kept.</p><nav aria-label="Main navigation">{nav.map(({ name, icon: Icon }) => <button key={name} disabled={loginBusy||(name==='Add'&&!signedIn)} title={name==='Add'&&!signedIn?'Log in to add puzzles':undefined} className={`side-nav ${tab === name ? 'active' : ''}`} onClick={() => navigate(name)}><Icon size={19}/>{name}</button>)}</nav><div className="side-footer">A home for every piece. <span>✦</span></div></aside>
     <main className="device-frame">
       <div className="app-topline"><span className="topline-brand">✦ jigsaw</span><div className="topline-account has-account"><span className="topline-right">THE COLLECTOR'S EDITION</span>{signedIn?<SignOutButton onSignedOut={signedOut}/>:<div className="sign-out-control"><button type="button" disabled={!sessionReady||transitioning||loginBusy} aria-expanded={loginOpen} aria-controls="account-login" onClick={()=>{setSelected(null);setOverlay(null);setLoginOpen(true);}}>Log in</button></div>}</div></div>
       <div className="scroll-area" ref={galleryRef} style={{ visibility: selected ? 'hidden' : undefined }}>
-        {loginOpen&&!signedIn?<LoginPage onBusyChange={setLoginBusy} onCancel={()=>setLoginOpen(false)} onAuthenticated={()=>{setSignedIn(true);setLoginOpen(false);setSelected(null);setTab('Collection');}}/>:tab === 'Add'&&signedIn ? <ImportWorkspace onSession={setSignedIn} onViewCollection={() => { setSignedIn(true); setTab('Collection'); }} /> : tab === 'Collection' && signedIn ? <PrivateCollection onAdd={() => navigate('Add')} onSettings={()=>navigate('Profile')}/> : tab === 'Collection'||tab==='Add' ? <>
+        {loginOpen&&!signedIn?<LoginPage onBusyChange={setLoginBusy} onCancel={()=>setLoginOpen(false)} onAuthenticated={()=>{setSignedIn(true);setLoginOpen(false);setSelected(null);setTab('Collection');}}/>:tab === 'Home' ? <HomePage signedIn={signedIn} sessionReady={sessionReady} onCollection={()=>navigate('Collection')} onAdd={()=>navigate('Add')} onResume={id=>navigate('Add',id)}/>:tab === 'Add'&&signedIn ? <ImportWorkspace initialBatchId={requestedBatch} onSession={setSignedIn} onViewCollection={() => { setSignedIn(true); setTab('Collection'); }} /> : tab === 'Collection' && signedIn ? <PrivateCollection onAdd={() => navigate('Add')} onSettings={()=>navigate('Profile')}/> : tab === 'Collection'||tab==='Add' ? <>
           <header className="page-heading collection-heading"><div><div className="eyebrow">YOUR LITTLE CORNER OF WONDER</div><h1>My Collection<span className="title-dot">.</span></h1><p>Every puzzle has a story worth keeping.</p></div><button className="round-icon" aria-label="Collection settings" onClick={() => setTab('Profile')}><Settings2 size={20}/></button></header>
           <div className="stats"><div><span className="stats-icon">✦</span><strong>{puzzles.length}</strong><small>Puzzles</small></div><div><span className="stats-icon">◈</span><strong>{new Set(puzzles.map(p => p.manufacturer)).size}</strong><small>Manufacturers</small></div><div><span className="stats-icon">♡</span><strong>2</strong><small>On wishlist <em>demo</em></small></div></div>
           <div className="section-title"><h2>The collection</h2><span>Illustrative sample data</span></div>

@@ -17,7 +17,7 @@ function sessionResult(?array $user): array { return ['user'=>$user,'csrf'=>$_SE
 try {
     $path=parse_url($_SERVER['REQUEST_URI'] ?? '/',PHP_URL_PATH); $method=$_SERVER['REQUEST_METHOD'];
     if ($path==='/api/health') respond(['status'=>'ok','service'=>'jigsaw-api']);
-    if (!preg_match('#^/api/(session|auth/|import-|collection)#',$path)) throw new HttpError(404,'Not found');
+    if (!preg_match('#^/api/(session|auth/|import-|collection|home)#',$path)) throw new HttpError(404,'Not found');
     ini_set('session.use_strict_mode','1'); ini_set('session.use_only_cookies','1');
     session_name('jigsaw_session');
     session_set_cookie_params(['lifetime'=>0,'path'=>'/','httponly'=>true,'samesite'=>'Lax','secure'=>getenv('SESSION_COOKIE_SECURE')==='1']);
@@ -48,6 +48,7 @@ try {
     $deletion=new Jigsaw\BatchDeletionService($db,new ImageStore(getenv('PRIVATE_STORAGE_PATH') ?: '/var/lib/jigsaw/photos'));
     if($path==='/api/import-batches/cleanup'&&$method==='POST') respond(['cleanup_pending'=>$deletion->cleanup($owner)]);
     if ($path==='/api/collection'&&$method==='GET') respond(['copies'=>$service->collection($owner)]);
+    if ($path==='/api/home'&&$method==='GET') respond([...(new Jigsaw\HomeSummary($db))->get($owner),'recent'=>$service->collection($owner,6)]);
     if ($path==='/api/import-batches') {
         if ($method==='POST') { $data=input(); respond($service->create($owner,ImportService::key($data['client_key'] ?? null)),201); }
         if ($method==='GET') respond(['batches'=>$service->batches($owner),'cleanup_pending'=>$deletion->pending($owner)]);
