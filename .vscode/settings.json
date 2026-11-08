@@ -1,3 +1,4 @@
 {
-    "makefile.configureOnOpen": true
+    "makefile.configureOnOpen": true,
+    "typescript.tsdk": "frontend/node_modules/typescript/lib"
 }

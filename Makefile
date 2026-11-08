@@ -1,8 +1,10 @@
-.PHONY: help dev dev-php stop restart build logs test test-env test-fast test-unit test-unit-dev test-php-unit test-integration test-frontend test-e2e test-load test-preprocess inspect-preprocess inspect-studio lint migrate seed reset-test ci
+.PHONY: help editor-deps dev dev-php stop restart build logs test test-env test-fast test-unit test-unit-dev test-php-unit test-integration test-frontend test-e2e test-load test-preprocess inspect-preprocess inspect-studio lint migrate seed reset-test ci
 DC = docker compose
 TC = docker compose -p jigsaw-test -f docker-compose.yml -f compose.test.yml
 help:
-	@echo "make dev | dev-php | stop | restart | build | logs | lint | test-fast | test-unit | test-unit-dev | test-php-unit | test-integration | test-frontend | test-e2e | test-load | test-preprocess | inspect-preprocess | inspect-studio | test | ci | migrate | seed | reset-test"
+	@echo "make editor-deps | dev | dev-php | stop | restart | build | logs | lint | test-fast | test-unit | test-unit-dev | test-php-unit | test-integration | test-frontend | test-e2e | test-load | test-preprocess | inspect-preprocess | inspect-studio | test | ci | migrate | seed | reset-test"
+editor-deps:
+	npm --prefix frontend ci --ignore-scripts --no-audit --no-fund
 dev:
 	$(DC) --profile processing up --build -d --wait
 	$(DC) run --rm api php scripts/migrate.php

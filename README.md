@@ -11,6 +11,8 @@ A free, mobile-first puzzle collector. **Foundation + Bulk Photo Import MVP.** S
 
 The initial run downloads Docker images and dependencies. `make dev` waits for service health checks. See [starter validation](docs/STARTER-VALIDATION.md) for actual verification and remaining gaps.
 
+For local VS Code editing, run `make editor-deps` once (and again after frontend lockfile changes). Docker's frontend dependencies live in a named volume and are not visible to the Windows TypeScript language server. This installs the same locked packages into the ignored host `frontend/node_modules`, without lifecycle scripts, and the workspace points VS Code at their TypeScript SDK. Continue running app/tests through Docker/Make; editor dependencies do not replace the container volume. If diagnostics remain after installation, run **TypeScript: Restart TS Server** in VS Code. Host Node 22.13+ is recommended; Docker already supplies Node 22 for tests.
+
 For another device on the same Wi-Fi, open `http://<this-PC-Wi-Fi-IPv4>:5173`. Vite binds to all interfaces and proxies relative `/api` requests to PHP, so the browser never needs a localhost API URL. The Windows firewall must allow inbound TCP 5173 on your private network; guest Wi-Fi isolation or VPN policy can also prevent access. Check from a physical second device before considering LAN access verified. The API is also published on port 8080 for local diagnostics. The Vite proxy is development-only; shared hosting must serve static build assets and route `/api` to PHP on the same origin.
 
 ## Included
