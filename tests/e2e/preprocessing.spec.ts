@@ -24,7 +24,7 @@ test('manual four-corner review flags low confidence and precedes identification
   await page.getByLabel('Box depth',{exact:true}).selectOption('deep');
   await page.getByLabel('Studio background',{exact:true}).selectOption('light');
   await page.getByRole('button',{name:'Apply presentation',exact:true}).click();
-  await expect(page.getByText(/55 mm/)).toBeVisible();
+  await expect(page.getByRole('region',{name:'Studio presentation settings'}).getByText(/× 55 mm · front/)).toBeVisible();
   await page.getByRole('button',{name:'Rotate Right',exact:true}).click();
   await expect(page.getByText(/Manual orientation saved \(90° clockwise\)/)).toBeVisible();
   await page.reload();
