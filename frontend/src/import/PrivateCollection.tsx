@@ -3,6 +3,7 @@ import { api } from './api';
 import {ArrowUpDown,ChevronDown,Grid2X2,List,Plus,Search,Settings2,SlidersHorizontal,X} from 'lucide-react';
 import {PrivateCopyDetails,type Copy} from './PrivateCopyDetails';
 import {allowNavigation} from '../navigation';
+import {CopyRemovalNotice,type CopyRemoval} from './CopyRemovalNotice';
 const makerKey=(value:string|null)=>value?.trim()?`brand:${value.trim().toLocaleLowerCase()}`:'unknown';
 export function PrivateCollection({ onAdd,onSettings }: { onAdd: () => void;onSettings?:()=>void }) {
   const [copies,setCopies] = useState<Copy[]>([]); const [selected,setSelected] = useState<Copy | null>(null);
@@ -11,6 +12,7 @@ export function PrivateCollection({ onAdd,onSettings }: { onAdd: () => void;onSe
   const [layout,setLayout]=useState<'gallery'|'list'>('gallery');
   const [maker,setMaker]=useState('all');const [pieces,setPieces]=useState('all');
   const [filtersOpen,setFiltersOpen]=useState(false);const [sort,setSort]=useState('newest');
+  const [removal,setRemoval]=useState<CopyRemoval|null>(null);
   const makers=new Map<string,string>();
   for(const copy of copies) if(copy.manufacturer?.trim()&&!makers.has(makerKey(copy.manufacturer))) makers.set(makerKey(copy.manufacturer),copy.manufacturer.trim());
   const makerOptions=[...makers].sort((a,b)=>a[1].localeCompare(b[1],undefined,{sensitivity:'base'}));
@@ -20,18 +22,26 @@ export function PrivateCollection({ onAdd,onSettings }: { onAdd: () => void;onSe
   const visible=copies.filter(copy=>(maker==='all'||makerKey(copy.manufacturer)===maker)&&(pieces==='all'||(pieces==='unknown'?!copy.piece_count:Number(copy.piece_count)===Number(pieces)))&&`${copy.title} ${copy.manufacturer??''} ${copy.piece_count??''} ${copy.sku??''} ${copy.release_year??''}`.toLocaleLowerCase().includes(search)).sort((a,b)=>sort==='title'?a.title.localeCompare(b.title,undefined,{sensitivity:'base'}):sort==='pieces'?(Number(a.piece_count)||Infinity)-(Number(b.piece_count)||Infinity)||a.title.localeCompare(b.title):Number(b.id)-Number(a.id));
   function clearFilters(){setQuery('');setMaker('all');setPieces('all');}
   const root = useRef<HTMLDivElement>(null); const scroll = useRef(0); const returnCopy = useRef<number | null>(null);
-  function open(copy: Copy) { scroll.current = root.current?.closest('.scroll-area')?.scrollTop ?? 0; returnCopy.current = copy.id; setSelected(copy); }
+  function open(copy: Copy) {setRemoval(null);scroll.current = root.current?.closest('.scroll-area')?.scrollTop ?? 0; returnCopy.current = copy.id; setSelected(copy); }
+  function removed(result:CopyRemoval) {
+    const index=visible.findIndex(copy=>copy.id===result.copy_id);const remaining=copies.filter(copy=>copy.id!==result.copy_id);
+    returnCopy.current=(visible[index+1]??visible[index-1]??remaining[0])?.id??0;
+    setCopies(remaining);setSelected(null);setRemoval(result);
+    if(maker!=='all'&&!remaining.some(copy=>makerKey(copy.manufacturer)===maker))setMaker('all');
+    if(pieces!=='all'&&!remaining.some(copy=>pieces==='unknown'?!copy.piece_count:Number(copy.piece_count)===Number(pieces)))setPieces('all');
+  }
   useLayoutEffect(() => {
     const scroller = root.current?.closest('.scroll-area');
     if (selected) { if (scroller) scroller.scrollTop = 0; root.current?.querySelector<HTMLButtonElement>('.back-button')?.focus(); }
-    else if (returnCopy.current !== null) { if (scroller) scroller.scrollTop = scroll.current; root.current?.querySelector<HTMLButtonElement>(`[data-copy-id="${returnCopy.current}"]`)?.focus({ preventScroll:true }); returnCopy.current = null; }
+    else if (returnCopy.current !== null) { if (scroller) scroller.scrollTop = scroll.current; (root.current?.querySelector<HTMLElement>(`[data-copy-id="${returnCopy.current}"]`)??root.current?.querySelector<HTMLElement>('.empty-state button')??root.current?.querySelector<HTMLElement>('.search-field input'))?.focus({ preventScroll:true }); returnCopy.current = null; }
   },[selected?.id]);
   useEffect(() => { void api<{ copies: Copy[] }>('/collection').then(x => setCopies(x.copies)).catch(e => setError(e.message)).finally(() => setLoaded(true)); }, []);
   useEffect(() => { const handle = (e: KeyboardEvent) => { if (e.key === 'Escape'&&allowNavigation()) setSelected(null); }; window.addEventListener('keydown',handle); return () => window.removeEventListener('keydown',handle); }, []);
   return <div className="private-collection" ref={root}>
+    {removal&&!selected&&<CopyRemovalNotice key={removal.copy_id} removal={removal}/>}
     {error && <p role="alert" className="import-error">{error}</p>}
     {!loaded && <p role="status">Opening your collection…</p>}
-    {selected ? <PrivateCopyDetails copy={selected} onBack={()=>setSelected(null)} onUpdated={copy=>{setCopies(old=>old.map(value=>value.id===copy.id?copy:value));setSelected(copy);}}/> : <>
+    {selected ? <PrivateCopyDetails copy={selected} onBack={()=>setSelected(null)} onRemoved={removed} onUpdated={copy=>{setCopies(old=>old.map(value=>value.id===copy.id?copy:value));setSelected(copy);}}/> : <>
       <header className="page-heading collection-heading"><div><div className="eyebrow">YOUR LITTLE CORNER OF WONDER</div><h1>My Collection<span className="title-dot">.</span></h1><p>Every puzzle has a story worth keeping.</p></div>{onSettings&&<button className="round-icon" aria-label="Collection settings" onClick={onSettings}><Settings2 size={20}/></button>}</header>
       <div className="stats" role="group" aria-label="Collection totals">
         <div><span className="stats-icon" aria-hidden="true">✦</span><strong>{loaded?copies.length.toLocaleString():'—'}</strong><small>Puzzles</small></div>

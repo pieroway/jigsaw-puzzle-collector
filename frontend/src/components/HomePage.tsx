@@ -4,6 +4,7 @@ import {api} from '../import/api';
 import {PrivateCopyDetails,type Copy} from '../import/PrivateCopyDetails';
 import './HomePage.css';
 import {allowNavigation} from '../navigation';
+import {CopyRemovalNotice,type CopyRemoval} from '../import/CopyRemovalNotice';
 type BatchSummary={id:number;created_at:string;remaining:number;image_review:number;needs_review:number;failed:number;approved:number;queued:number;processing:number};
 type Summary={totals:{puzzles:number;manufacturers:number;known_pieces:number};batches:BatchSummary[];recent:Copy[]};
 type Props={signedIn:boolean;sessionReady:boolean;onCollection:()=>void;onAdd:()=>void;onResume:(id:number)=>void};
@@ -15,28 +16,37 @@ export function HomePage({signedIn,sessionReady,onCollection,onAdd,onResume}:Pro
   const [selected,setSelected]=useState<Copy|null>(null);const root=useRef<HTMLDivElement>(null);
   const scroll=useRef(0);const returnCopy=useRef<number|null>(null);
   const generation=useRef(0);
+  const refreshRequest=useRef(0);
+  const [removal,setRemoval]=useState<CopyRemoval|null>(null);
   useEffect(()=>{
-    let alive=true;generation.current++;setData(null);setError('');setSelected(null);
+    let alive=true;generation.current++;setData(null);setError('');setSelected(null);setRemoval(null);
     if(signedIn&&sessionReady) void api<Summary>('/home').then(value=>{if(alive)setData(value);}).catch(reason=>{if(alive)setError(reason instanceof Error?reason.message:'Home could not load. Please retry.');});
     return ()=>{alive=false;generation.current++;};
   },[signedIn,sessionReady,attempt]);
   useLayoutEffect(()=>{
     const scroller=root.current?.closest('.scroll-area');
     if(selected) {if(scroller)scroller.scrollTop=0;root.current?.querySelector<HTMLButtonElement>('.back-button')?.focus();}
-    else if(returnCopy.current!==null) {if(scroller)scroller.scrollTop=scroll.current;root.current?.querySelector<HTMLButtonElement>(`[data-home-copy-id="${returnCopy.current}"]`)?.focus({preventScroll:true});returnCopy.current=null;}
+    else if(returnCopy.current!==null) {if(scroller)scroller.scrollTop=scroll.current;(root.current?.querySelector<HTMLElement>(`[data-home-copy-id="${returnCopy.current}"]`)??root.current?.querySelector<HTMLElement>('.home-actions button'))?.focus({preventScroll:true});returnCopy.current=null;}
   },[selected?.id]);
   useEffect(()=>{const escape=(event:KeyboardEvent)=>{if(event.key==='Escape'&&allowNavigation())setSelected(null);};window.addEventListener('keydown',escape);return()=>window.removeEventListener('keydown',escape);},[]);
-  function open(copy:Copy) {scroll.current=root.current?.closest('.scroll-area')?.scrollTop??0;returnCopy.current=copy.id;setSelected(copy);}
+  function open(copy:Copy) {setRemoval(null);scroll.current=root.current?.closest('.scroll-area')?.scrollTop??0;returnCopy.current=copy.id;setSelected(copy);}
   function updated(copy:Copy) {
-    const current=generation.current;
+    const current=generation.current;const request=++refreshRequest.current;
     setSelected(copy);setData(old=>old?{...old,recent:old.recent.map(value=>value.id===copy.id?copy:value)}:old);
-    void api<Summary>('/home').then(value=>{if(current===generation.current)setData(value);}).catch(()=>{if(current===generation.current)setError('Your copy is saved, but Home totals could not refresh. Use Retry Home.');});
+    void api<Summary>('/home').then(value=>{if(current===generation.current&&request===refreshRequest.current)setData(value);}).catch(()=>{if(current===generation.current&&request===refreshRequest.current)setError('Home totals could not refresh. Use Retry Home.');});
+  }
+  function removed(result:CopyRemoval) {
+    const recent=data?.recent??[];const index=recent.findIndex(copy=>copy.id===result.copy_id);const current=generation.current;const request=++refreshRequest.current;
+    returnCopy.current=(recent[index+1]??recent[index-1])?.id??0;
+    setData(old=>old?{...old,recent:old.recent.filter(copy=>copy.id!==result.copy_id)}:old);setSelected(null);setRemoval(result);setError('');
+    void api<Summary>('/home').then(value=>{if(current===generation.current&&request===refreshRequest.current)setData(value);}).catch(()=>{if(current===generation.current&&request===refreshRequest.current)setError('The copy is no longer in your collection, but Home totals could not refresh. Use Retry Home.');});
   }
   return <div ref={root} className="home-page private-collection">
-    {signedIn&&selected?<PrivateCopyDetails key={selected.id} copy={selected} onBack={()=>setSelected(null)} onUpdated={updated} backLabel="Home"/>:<>
+    {signedIn&&removal&&!selected&&<CopyRemovalNotice key={removal.copy_id} removal={removal}/>}
+    {signedIn&&selected?<PrivateCopyDetails key={selected.id} copy={selected} onBack={()=>setSelected(null)} onUpdated={updated} onRemoved={removed} backLabel="Home"/>:<>
       <header className="page-heading collection-heading home-heading"><div><div className="eyebrow">A HOME FOR EVERY PIECE</div><h1>Welcome home<span className="title-dot">.</span></h1><p>A little joy, piece by piece.</p></div></header>
       <div className="home-intro">
-        {!sessionReady?<p role="status">Opening your Home…</p>:!signedIn?<p>Your puzzles, beautifully kept. Browse the sample collection, or log in using the header to start your own.</p>:data?<p className="home-totals">{data.totals.puzzles.toLocaleString()} puzzles · {data.totals.manufacturers.toLocaleString()} manufacturers <span>{data.totals.known_pieces.toLocaleString()} known pieces in your collection</span></p>:!error&&<p role="status">Gathering your latest puzzles…</p>}
+        {!sessionReady?<p role="status">Opening your Home…</p>:!signedIn?<p>Your puzzles, beautifully kept. Browse the sample collection, or log in using the header to start your own.</p>:data&&!error?<p className="home-totals">{data.totals.puzzles.toLocaleString()} puzzles · {data.totals.manufacturers.toLocaleString()} manufacturers <span>{data.totals.known_pieces.toLocaleString()} known pieces in your collection</span></p>:!error&&<p role="status">Gathering your latest puzzles…</p>}
         <div className="home-actions"><button className="primary-action" onClick={onCollection}><BookOpen size={17}/>{signedIn?'View collection':'Browse sample collection'}</button><button className="home-secondary" disabled={!signedIn||!sessionReady} onClick={onAdd}><Plus size={17}/>Import photos</button></div>
       </div>
       {signedIn&&error&&<div className="home-error"><p role="alert" className="import-error">{error}</p><button className="home-secondary" onClick={()=>setAttempt(value=>value+1)}>Retry Home</button></div>}

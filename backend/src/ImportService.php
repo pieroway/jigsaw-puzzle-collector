@@ -10,7 +10,7 @@ final class ImportService {
         if (!$row) throw new HttpError(404,'Batch not found'); return $row;
     }
     private function item(int $id,int $owner,bool $lock=false): array {
-        $row=$this->query('SELECT i.* FROM import_items i JOIN import_batches b ON b.id=i.batch_id WHERE i.id=? AND b.user_id=?'.($lock?' FOR UPDATE':''),[$id,$owner])->fetch();
+        $row=$this->query('SELECT i.*,EXISTS(SELECT 1 FROM deleted_owned_copies d WHERE d.import_item_id=i.id AND d.user_id=b.user_id) AS copy_deleted FROM import_items i JOIN import_batches b ON b.id=i.batch_id WHERE i.id=? AND b.user_id=?'.($lock?' FOR UPDATE':''),[$id,$owner])->fetch();
         if (!$row) throw new HttpError(404,'Import item not found'); return $row;
     }
     private function event(int $id,int $owner,string $action,array $payload=[]): void {
@@ -172,7 +172,7 @@ final class ImportService {
     public function commit(int $batch,int $owner): array {
         $this->transaction(function() use($batch,$owner) {
             $this->query('SELECT id FROM users WHERE id=? FOR UPDATE',[$owner]); $this->batch($batch,$owner,true);
-            $items=$this->query("SELECT * FROM import_items WHERE batch_id=? AND state='approved' ORDER BY id LIMIT 10 FOR UPDATE",[$batch])->fetchAll();
+            $items=$this->query("SELECT * FROM import_items i WHERE batch_id=? AND state='approved' AND NOT EXISTS(SELECT 1 FROM deleted_owned_copies d WHERE d.import_item_id=i.id AND d.user_id=?) ORDER BY id LIMIT 10 FOR UPDATE",[$batch,$owner])->fetchAll();
             foreach ($items as $item) {
                 $fields=json_decode($item['fields'],true); $candidate=ImportRules::identity($fields);
                 $identity=$candidate?hash('sha256',$candidate.'|'.($fields['release_year'] ?? 'unknown')):null;
@@ -207,6 +207,7 @@ final class ImportService {
         $row['processed_image_url']=($row['preprocessing']['status'] ?? '')==='ready'?'/api/import-items/'.$row['id'].'/processed-image?v='.$row['preprocessing']['revision']:null;
         $row['studio_image_url']=($row['preprocessing']['studio']['status'] ?? '')==='ready'?'/api/import-items/'.$row['id'].'/studio-image?v='.$row['preprocessing']['revision']:null;
         $row['duplicates']=['exact_photo'=>[],'identity'=>[],'editions'=>[]];
+        $row['copy_deleted']=!empty($row['copy_deleted']);
         if ($row['image_id']) $row['duplicates']['exact_photo']=$this->query('SELECT i.id,i.batch_id FROM import_items i JOIN import_batches b ON b.id=i.batch_id JOIN private_images p ON p.id=i.image_id WHERE b.user_id=? AND i.id<>? AND p.sha256=(SELECT sha256 FROM private_images WHERE id=?) ORDER BY i.id LIMIT 20',[$owner,$row['id'],$row['image_id']])->fetchAll();
         $identity=$row['fields']?ImportRules::identity($row['fields']):null;
         if ($identity) {
@@ -216,9 +217,9 @@ final class ImportService {
         return $row;
     }
     public function status(int $batch,int $owner): array {
-        $row=$this->batch($batch,$owner); $items=$this->query('SELECT * FROM import_items WHERE batch_id=? ORDER BY id',[$batch])->fetchAll();
-        $summary=array_fill_keys(['uploaded','identified','queued','processing','image_review','needs_review','approved','imported','failed','rejected'],0);
-        foreach ($items as $item) { $summary['uploaded']++; $summary[$item['state']]++; if ($item['suggestion'] && json_decode($item['suggestion'],true)['title']!==null) $summary['identified']++; }
+        $row=$this->batch($batch,$owner); $items=$this->query('SELECT i.*,EXISTS(SELECT 1 FROM deleted_owned_copies d WHERE d.import_item_id=i.id AND d.user_id=?) AS copy_deleted FROM import_items i WHERE batch_id=? ORDER BY id',[$owner,$batch])->fetchAll();
+        $summary=array_fill_keys(['uploaded','identified','queued','processing','image_review','needs_review','approved','imported','failed','rejected','removed'],0);
+        foreach ($items as $item) { $summary['uploaded']++; $summary[$item['state']]++;if(!empty($item['copy_deleted']))$summary['removed']++; if ($item['suggestion'] && json_decode($item['suggestion'],true)['title']!==null) $summary['identified']++; }
         return ['id'=>$batch,'created_at'=>$row['created_at'],'summary'=>$summary,'items'=>array_map(fn($item)=>$this->serialize($item,$owner),$items)];
     }
     public function image(int $id,int $owner,bool $original=false,string $variant='image'): array {

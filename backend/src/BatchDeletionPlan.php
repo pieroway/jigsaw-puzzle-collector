@@ -3,7 +3,7 @@ declare(strict_types=1);
 namespace Jigsaw;
 final class BatchDeletionPlan {
     public static function drafts(array $items): array {
-        return array_values(array_filter($items,fn($item)=>$item['state']!=='imported'&&(int)($item['copy_count'] ?? 0)===0));
+        return array_values(array_filter($items,fn($item)=>($item['state']!=='imported'||!empty($item['copy_deleted']))&&(int)($item['copy_count'] ?? 0)===0));
     }
     public static function assetKeys(array $item): array {
         $meta=json_decode($item['preprocessing'] ?? 'null',true);

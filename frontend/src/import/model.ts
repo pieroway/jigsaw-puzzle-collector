@@ -4,6 +4,7 @@ export type Corners = [[number,number],[number,number],[number,number],[number,n
 export type StudioSettings = { depth:'thin'|'standard'|'deep'; view:'front'|'three-quarter'; background:'light'|'dark'|'transparent'; enabled:boolean; dimensions:{width_mm?:number;height_mm?:number;depth_mm?:number} };
 export type Preprocessing = { status: 'ready' | 'failed'; decision: 'pending' | 'accepted' | 'rejected'; revision: string; corners: Corners; confidence: number; low_confidence: boolean; requires_review: boolean; engine?: string; manual?: boolean; orientation?: { angle:number; source:'ocr'|'manual'|'unavailable'; ambiguous:boolean; low_ocr_confidence?:boolean; reason:string }; studio?:{status:'ready'|'failed'|'unavailable';settings:StudioSettings;error?:string;dimensions?:{width_mm:number;height_mm:number;depth_mm:number;front_source:string;depth_source:string;verified:false}}; warnings: string[]; error?: string; oriented_size?: [number,number]; settings?: { exposure_gain:number; white_balance_gains:number[]; contrast:number; sharpening:number } };
 export type ImportItem = {
+  copy_deleted?:boolean;
   id: number; batch_id: number; client_key: string; filename: string;
   state: 'queued' | 'processing' | 'image_review' | 'needs_review' | 'approved' | 'imported' | 'failed' | 'rejected';
   preprocessing?: Preprocessing | null; source_image_url?: string | null; processed_image_url?: string | null; studio_image_url?:string|null;

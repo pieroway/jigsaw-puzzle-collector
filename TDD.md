@@ -54,6 +54,12 @@ Reference mockups live in `docs/design/mockups`. Uploaded originals are stored p
 
 ## AI-agent workflow
 
+### Individual copy deletion
+
+`DELETE /api/collection-copies/{id}` requires owner session, CSRF and a positive integer `revision`. `CopyDeletionService` locks the owner and copy, rejects stale revisions with 409, and atomically removes copy/edit history while recording a minimal owner-scoped deletion marker. Repeated owner requests return success; foreign or unknown IDs return 404. Migration 007 adds markers and an image cleanup-key registry. Shared identities and other copies remain intact. Active import sources retain history; hidden-batch sources are removed only after their final copy reference disappears. Import commit excludes marked sources.
+
+`PhotoCleanupQueue` records original/derived asset keys before source metadata disappears, retains them while any image references remain, and queues only unreferenced photos. Existing cleanup rechecks references, removes files, then releases image quota; failures preserve a retryable job. No Python dependency is added. Home refresh sequencing rejects older responses after deletion; Collection removes only the selected copy and restores focus. See `docs/COPY-DELETION.md` for verification scope.
+
 ### Studio presentation
 
 `processing/studio.py` projects a corrected front onto a width/height/depth cuboid. `studio_config.json` supplies millimetre depth presets, estimated front scale and Front/Three-quarter cameras (12° yaw, 8° downward view by default). The standing-box reference determines the visible left side/top and ground-plane shadow concentrated at the base, rather than an outline shadow around the whole artwork. Neutral facets, conservative edge tint and upper highlights add no side artwork. Transparent lossless WebP assets are generated at import/settings changes (1200 pixels; thumbnails 400). Render metadata records dimensions, estimated/user-supplied provenance, camera and transform. Verified product dimensions are never inferred or written. Supplied front proportions must match the corrected front within 2%; exact artwork aspect is preserved using supplied width as the scale and retaining the entered height in metadata.

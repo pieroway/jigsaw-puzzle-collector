@@ -52,6 +52,7 @@ try {
         $copies=new Jigsaw\CopyService($db,$service);$copyId=(int)$copyMatch[1];
         if($method==='GET')respond(['copy'=>$copies->read($copyId,$owner)]);
         if($method==='PATCH')respond(['copy'=>$copies->update($copyId,$owner,input())]);
+        if($method==='DELETE')respond([...(new Jigsaw\CopyDeletionService($db))->delete($copyId,$owner,input()),'cleanup_pending'=>$deletion->cleanup($owner)]);
     }
     if ($path==='/api/home'&&$method==='GET') respond([...(new Jigsaw\HomeSummary($db))->get($owner),'recent'=>$service->collection($owner,6)]);
     if ($path==='/api/import-batches') {

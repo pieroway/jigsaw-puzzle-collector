@@ -10,6 +10,21 @@ vi.mock('./api',()=>({api:vi.fn()}));
 const copy={id:7,edition_id:3,title:'Garden Birds',manufacturer:'Maker',piece_count:500,sku:null,release_year:null,edit_revision:1,box_condition:null,seal_status:null,completeness:null,storage_location:null,notes:null} as Copy;
 beforeEach(()=>{vi.clearAllMocks();vi.spyOn(window,'confirm').mockReturnValue(false);});
 afterEach(()=>{cleanup();vi.restoreAllMocks();});
+it('keeps field names stable when reopening existing notes and showing validation errors',async()=>{
+  const user=userEvent.setup();render(<CopyEditor copy={{...copy,notes:'<b>Saved private note</b>'}} onSaved={vi.fn()} onCancel={vi.fn()}/>);
+  expect((screen.getByRole('textbox',{name:/^Notes$/}) as HTMLTextAreaElement).value).toBe('<b>Saved private note</b>');
+  await user.clear(screen.getByLabelText('Title'));await user.click(screen.getByRole('button',{name:'Save changes'}));
+  await user.type(screen.getByLabelText('Title'),'Corrected');await user.clear(screen.getByLabelText('Notes'));await user.type(screen.getByLabelText('Notes'),'New note');
+  expect((screen.getByLabelText('Notes') as HTMLTextAreaElement).value).toBe('New note');
+});
+it('retains a draft when the copy was deleted on another device',async()=>{
+  vi.mocked(api).mockRejectedValue(Object.assign(new Error('Copy deleted on another device.'),{status:404}));
+  const user=userEvent.setup();const onMissing=vi.fn();render(<CopyEditor copy={copy} backLabel="Home" onSaved={vi.fn()} onCancel={vi.fn()} onMissing={onMissing}/>);
+  await user.type(screen.getByLabelText('Notes'),'Keep this draft');await user.click(screen.getByRole('button',{name:'Save changes'}));
+  await screen.findByRole('alert');expect((screen.getByLabelText('Notes') as HTMLTextAreaElement).value).toBe('Keep this draft');
+  await user.click(screen.getByRole('button',{name:'Return to Home'}));expect(onMissing).not.toHaveBeenCalled();
+  await user.click(screen.getByRole('button',{name:'Cancel'}));expect(onMissing).toHaveBeenCalledOnce();
+});
 it('saves only changed fields with the loaded revision and clears optional values',async()=>{
   const onSaved=vi.fn();vi.mocked(api).mockResolvedValue({copy:{...copy,title:'Birds',manufacturer:null,notes:'My shelf',edit_revision:2}});
   const user=userEvent.setup();render(<CopyEditor copy={copy} onSaved={onSaved} onCancel={vi.fn()}/>);

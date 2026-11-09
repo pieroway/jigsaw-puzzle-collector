@@ -48,6 +48,8 @@ Hero image, title, publisher/edition, owned badge, piece count/year/size, condit
 
 ## Motion
 
+Individual copy deletion lives in private details as a separate Delete this copy action, hidden while editing. Fetch current metadata before opening an inline alert dialog showing title/copy ID, permanent scope and photo-retention policy. Default focus goes to Keep copy; Escape cancels and restores trigger focus. Disable repeated submissions and navigation while deleting. A revision conflict requires Review latest copy and another explicit confirmation. Missing records show a return action; edits retain an unsaved draft if another device removed the copy. Successful removal returns to the originating Home/Collection, refreshes totals and focuses a remaining card or empty-state action. Pending photo cleanup has an explicit retry. Use existing theme tokens, accessible controls and no additional motion.
+
 Default **Relaxed 550 ms** shared-element-like gallery → details transition; reverse navigation is slightly quicker. Settings: **System / On / Off** Reduce Motion. System follows OS `prefers-reduced-motion`; On replaces spatial movement with a short crossfade; Off enables normal motion even when OS prefers reduction (explicit override). Never make motion necessary to understand state changes.
 
 ## Accessibility

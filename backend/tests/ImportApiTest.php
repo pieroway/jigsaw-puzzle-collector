@@ -79,6 +79,43 @@ final class ImportApiTest extends TestCase {
         $cookie=$this->cookie;$csrf=$this->csrf;$this->setUp();self::assertSame(404,$this->call('GET',"/api/collection-copies/$first")[0]);self::assertSame(404,$this->call('PATCH',"/api/collection-copies/$first",['revision'=>3,'fields'=>['title'=>'Another owner']])[0]);
         $this->cookie='';$this->csrf='';self::assertSame(401,$this->call('GET',"/api/collection-copies/$first")[0]);$this->cookie=$cookie;$this->csrf=$csrf;
     }
+    public function testDeletingACopyPreservesSharedPhotosUntilBothCopyAndHistoryReferencesAreGone(): void {
+        $db=Jigsaw\Database::connect();$batch=$this->batch();$item=$this->upload($batch);$image=(int)$item['image_id'];
+        $db->exec("INSERT INTO puzzles(title) VALUES ('Deletion fixture')");$puzzle=(int)$db->lastInsertId();
+        $q=$db->prepare("INSERT INTO editions(puzzle_id,manufacturer,piece_count,owner_id) VALUES (?,'Keep this edition',500,?)");$q->execute([$puzzle,$this->user]);$edition=(int)$db->lastInsertId();
+        $q=$db->prepare("UPDATE import_items SET state='imported' WHERE id=?");$q->execute([$item['id']]);
+        $q=$db->prepare("INSERT INTO owned_copies(user_id,edition_id,import_item_id,image_id,provenance) VALUES (?,?,?,?, '{}')");$q->execute([$this->user,$edition,$item['id'],$image]);$first=(int)$db->lastInsertId();$q->execute([$this->user,$edition,null,$image]);$second=(int)$db->lastInsertId();
+        $q=$db->prepare('SELECT storage_key FROM private_images WHERE id=?');$q->execute([$image]);$storage=$q->fetchColumn();$store=new Jigsaw\ImageStore(getenv('PRIVATE_STORAGE_PATH'));$original=$store->path($storage).'.original';$hash=hash_file('sha256',$original);
+        $extra=bin2hex(random_bytes(24));$extraPath=$store->path($extra).'.catalogue.jpg';file_put_contents($extraPath,'retired derivative');
+        $q=$db->prepare('UPDATE import_items SET preprocessing=? WHERE id=?');$q->execute([json_encode(['asset_key'=>$extra,'status'=>'failed','decision'=>'rejected','revision'=>'deletion-fixture','confidence'=>0,'warnings'=>[],'corners'=>[[0,0],[1,0],[1,1],[0,1]]]),$item['id']]);
+        $q=$db->prepare('UPDATE private_images SET bytes=bytes+? WHERE id=?');$q->execute([filesize($extraPath),$image]);
+        self::assertSame(200,$this->call('PATCH',"/api/collection-copies/$first",['revision'=>1,'fields'=>['notes'=>'Private note']])[0]);
+        $csrf=$this->csrf;$this->csrf='wrong';self::assertSame(403,$this->call('DELETE',"/api/collection-copies/$first",['revision'=>2])[0]);$this->csrf=$csrf;
+        self::assertSame(409,$this->call('DELETE',"/api/collection-copies/$first",['revision'=>1])[0]);
+        [$status,$result]=$this->call('DELETE',"/api/collection-copies/$first",['revision'=>2]);self::assertSame(200,$status);self::assertSame(0,$result['cleanup_pending']);
+        self::assertSame(200,$this->call('DELETE',"/api/collection-copies/$first",['revision'=>2])[0]);self::assertSame(404,$this->call('GET',"/api/collection-copies/$first")[0]);
+        self::assertSame(200,$this->call('GET',"/api/collection-copies/$second")[0]);self::assertSame($hash,hash_file('sha256',$original));
+        $q=$db->prepare('SELECT COUNT(*) FROM owned_copy_edits WHERE copy_id=?');$q->execute([$first]);self::assertSame(0,(int)$q->fetchColumn());
+        [$status,$history]=$this->call('POST',"/api/import-batches/$batch/commit");self::assertSame(200,$status);self::assertTrue($history['items'][0]['copy_deleted']);self::assertSame(1,$history['summary']['removed']);
+        self::assertCount(1,$this->call('GET','/api/collection')[1]['copies']);
+        self::assertSame(200,$this->call('DELETE',"/api/import-batches/$batch")[0]);self::assertFileExists($original);self::assertFileExists($extraPath);
+        self::assertSame(200,$this->call('DELETE',"/api/collection-copies/$second",['revision'=>1])[0]);self::assertFileDoesNotExist($original);self::assertFileDoesNotExist($extraPath);
+        $q=$db->prepare('SELECT COALESCE(SUM(bytes),0) FROM private_images WHERE user_id=?');$q->execute([$this->user]);self::assertSame(0,(int)$q->fetchColumn());
+        $q=$db->prepare('SELECT COUNT(*) FROM editions WHERE id=?');$q->execute([$edition]);self::assertSame(1,(int)$q->fetchColumn());
+        $this->setUp();self::assertSame(404,$this->call('DELETE',"/api/collection-copies/$first",['revision'=>2])[0]);
+    }
+    public function testDeletingTheLastCopyAfterItsBatchWasHiddenCleansUpTheRetainedSource(): void {
+        $db=Jigsaw\Database::connect();$batch=$this->batch();$item=$this->upload($batch);
+        $db->exec("INSERT INTO puzzles(title) VALUES ('Hidden batch deletion fixture')");$puzzle=(int)$db->lastInsertId();
+        $q=$db->prepare("INSERT INTO editions(puzzle_id,manufacturer) VALUES (?,'Keep edition')");$q->execute([$puzzle]);$edition=(int)$db->lastInsertId();
+        $q=$db->prepare("UPDATE import_items SET state='imported' WHERE id=?");$q->execute([$item['id']]);
+        $q=$db->prepare('INSERT INTO owned_copies(user_id,edition_id,import_item_id,image_id) VALUES (?,?,?,?)');$q->execute([$this->user,$edition,$item['id'],$item['image_id']]);$copy=(int)$db->lastInsertId();
+        [$status,$hidden]=$this->call('DELETE',"/api/import-batches/$batch");self::assertSame(200,$status);self::assertSame(1,$hidden['retained_copies']);
+        self::assertSame(200,$this->call('DELETE',"/api/collection-copies/$copy",['revision'=>1])[0]);
+        $q=$db->prepare('SELECT COUNT(*) FROM import_items WHERE id=?');$q->execute([$item['id']]);self::assertSame(0,(int)$q->fetchColumn());
+        $q=$db->prepare('SELECT COUNT(*) FROM private_images WHERE id=?');$q->execute([$item['image_id']]);self::assertSame(0,(int)$q->fetchColumn());
+        self::assertSame(200,$this->call('DELETE',"/api/collection-copies/$copy",['revision'=>1])[0]);
+    }
     private function batch(): int {
         [$status, $batch] = $this->call('POST', '/api/import-batches', ['client_key'=>bin2hex(random_bytes(12))]);
         self::assertSame(201, $status); return $batch['id'];

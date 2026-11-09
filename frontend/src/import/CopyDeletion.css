@@ -1,0 +1,12 @@
+.copy-delete {margin-top:32px;padding-top:24px;border-top:1px solid var(--border)}
+.copy-danger {min-height:44px;padding:11px 17px;border:1px solid #b84a43;border-radius:12px;background:var(--surface);color:#a33630;font:inherit;font-size:13px;font-weight:600}
+html[data-theme=dark] .copy-danger {color:#ffb0a6;border-color:#c8756d}
+.copy-delete-confirm {margin-top:16px;padding:22px;background:var(--surface);border:1px solid var(--border);border-radius:18px}
+.copy-delete-confirm h2 {font-size:22px}
+.copy-delete-confirm p,.copy-removal-notice p {font-size:13px;line-height:1.65;color:var(--muted);overflow-wrap:anywhere}
+.copy-delete-confirm .import-actions {flex-wrap:wrap}
+.copy-removal-notice {margin:0 0 20px;padding:15px 18px;border:1px solid var(--border);border-radius:14px;background:var(--surface)}
+.copy-removal-notice p {margin:0}
+.copy-removal-notice button {min-height:44px;margin-top:8px;padding:9px 14px;border:1px solid var(--border);border-radius:10px;background:var(--bg);color:var(--text)}
+.copy-danger:disabled {opacity:.5;cursor:default}
+@media(max-width:600px){.copy-delete-confirm{padding:18px 14px}}

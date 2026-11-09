@@ -12,6 +12,15 @@ const copies=[
 ];
 beforeEach(()=>{vi.clearAllMocks();vi.mocked(api).mockResolvedValue({copies});});
 afterEach(cleanup);
+it('removes only the selected copy and restores focus to a remaining card',async()=>{
+  vi.mocked(api).mockImplementation(async(path,method)=>path==='/collection'?{copies}:method==='DELETE'?{deleted:true,copy_id:2,cleanup_pending:0}:{copy:{...copies[1],edit_revision:1}});
+  const user=userEvent.setup();render(<PrivateCollection onAdd={vi.fn()}/>);
+  await user.click(await screen.findByRole('button',{name:/Alpine Village/}));await user.click(screen.getByRole('button',{name:'Delete this copy'}));await screen.findByRole('alertdialog');
+  await user.click(screen.getByRole('button',{name:'Delete copy permanently'}));
+  expect(screen.getAllByTestId('private-copy')).toHaveLength(2);expect(screen.queryByRole('button',{name:/Alpine Village/})).toBeNull();
+  expect(document.activeElement).toBe(screen.getByRole('button',{name:/Garden Birds/}));
+  expect(within(screen.getByRole('group',{name:'Collection totals'})).getByText('500')).toBeTruthy();
+});
 it('edits a copy privately and immediately refreshes its gallery metadata and totals',async()=>{
   const source={...copies[2],edit_revision:1,storage_location:null,notes:null};const saved={...source,title:'Corrected Garden',manufacturer:'New Maker',piece_count:1500,notes:'Shelf note',edit_revision:2};
   vi.mocked(api).mockImplementation(async(path,method)=>path==='/collection'?{copies}:method==='PATCH'?{copy:saved}:{copy:source});

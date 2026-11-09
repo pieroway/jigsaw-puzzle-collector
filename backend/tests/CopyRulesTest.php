@@ -20,9 +20,9 @@ final class CopyRulesTest extends TestCase {
     }
     public function testMissingCopyAndStaleRevisionRollBackWithoutWriting(): void {
         foreach([false,['edit_revision'=>2]] as $row) {
-            $db=$this->createMock(PDO::class);$statement=$this->createMock(PDOStatement::class);
+            $db=$this->createMock(PDO::class);$statement=$this->createMock(PDOStatement::class);$owner=$this->createMock(PDOStatement::class);
             $db->expects(self::once())->method('beginTransaction');$db->expects(self::once())->method('rollBack');$db->method('inTransaction')->willReturn(true);
-            $db->expects(self::once())->method('prepare')->willReturnCallback(function(string $sql) use($statement) {self::assertStringContainsString('id=? AND user_id=? FOR UPDATE',$sql);return $statement;});
+            $db->expects(self::exactly(2))->method('prepare')->willReturnCallback(function(string $sql) use($statement,$owner) {if(str_starts_with($sql,'SELECT id FROM users'))return $owner;self::assertStringContainsString('id=? AND user_id=? FOR UPDATE',$sql);return $statement;});
             $statement->expects(self::once())->method('execute')->with([12,7]);$statement->method('fetch')->willReturn($row);
             $imports=new ImportService($db,new ImageStore('/tmp'),$this->createMock(ExtractionProvider::class));
             try {(new CopyService($db,$imports))->update(12,7,['revision'=>1,'fields'=>['title'=>'My correction']]);self::fail('Unsafe update accepted');}
@@ -36,7 +36,9 @@ final class CopyRulesTest extends TestCase {
         $read=$this->createMock(PDOStatement::class);$read->method('fetchAll')->willReturn([$row]);
         $write=$this->createMock(PDOStatement::class);$write->method('rowCount')->willReturn(1);
         $history=$this->createMock(PDOStatement::class);$history->method('execute')->willThrowException(new PDOException('History write failed'));
-        $db->expects(self::exactly(4))->method('prepare')->willReturnCallback(function(string $sql) use($lock,$read,$write,$history) {
+        $owner=$this->createMock(PDOStatement::class);
+        $db->expects(self::exactly(5))->method('prepare')->willReturnCallback(function(string $sql) use($lock,$read,$write,$history,$owner) {
+            if(str_starts_with($sql,'SELECT id FROM users'))return $owner;
             if(str_starts_with($sql,'SELECT * FROM owned_copies'))return $lock;
             if(str_starts_with($sql,'SELECT c.*'))return $read;
             if(str_starts_with($sql,'UPDATE owned_copies')) {self::assertStringNotContainsString('edition_id=',$sql);self::assertStringNotContainsString('provenance=',$sql);return $write;}

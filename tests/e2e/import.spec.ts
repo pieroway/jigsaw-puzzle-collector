@@ -74,6 +74,20 @@ test('ten photos: edit, review, resume, import privately and retry safely', asyn
   await page.getByLabel('Notes',{exact:true}).fill('Unsaved note');
   await page.getByRole('button',{name:'Cancel',exact:true}).click();
   await expect(page.getByText('<b>Private note</b>',{exact:true})).toBeVisible();
+  await page.getByRole('button',{name:'Delete this copy',exact:true}).click();
+  await expect(page.getByRole('alertdialog',{name:'Delete Edited after import'})).toBeVisible();
+  await page.getByRole('button',{name:'Keep copy',exact:true}).click();
+  await expect(page.getByRole('heading',{name:'Edited after import',exact:true})).toBeVisible();
+  await page.getByRole('button',{name:'Delete this copy',exact:true}).click();
+  await page.getByRole('button',{name:'Delete copy permanently',exact:true}).click();
+  await expect(page.getByTestId('private-copy')).toHaveCount(9);
+  expect(await(await page.request.get(originalUrl!)).body()).toEqual(originalBytes);
+  await page.reload();await expect(page.getByTestId('private-copy')).toHaveCount(9);
+  await page.getByRole('button',{name:'Add',exact:true}).last().click();
+  await expect(page.getByText('Removed from collection',{exact:true})).toBeVisible();
+  await page.getByRole('button',{name:'Import approved copies',exact:true}).click();
+  await page.getByRole('button',{name:'View private collection',exact:true}).click();
+  await expect(page.getByTestId('private-copy')).toHaveCount(9);
 });
 
 test('invalid photos show actionable errors and can be retried without adding an item', async ({ page }) => {

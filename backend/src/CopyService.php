@@ -11,6 +11,7 @@ final class CopyService {
     public function update(int $id,int $owner,array $input): array {
         $this->db->beginTransaction();
         try {
+            $q=$this->db->prepare('SELECT id FROM users WHERE id=? FOR UPDATE');$q->execute([$owner]);
             $q=$this->db->prepare('SELECT * FROM owned_copies WHERE id=? AND user_id=? FOR UPDATE');$q->execute([$id,$owner]);$row=$q->fetch();
             if(!$row)throw new HttpError(404,'Copy not found');
             $revision=$input['revision']??null;
