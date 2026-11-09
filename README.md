@@ -1,5 +1,15 @@
 # Jigsaw Puzzle Collector
 
+## Screenshots
+
+A look at the site on iPhone. Select any screenshot to view it at full size.
+
+| | | |
+| --- | --- | --- |
+| [<img src="docs/screencaps/IMG_9248.PNG" alt="Jigsaw Puzzle Collector on iPhone, screenshot 1" width="250">](docs/screencaps/IMG_9248.PNG) | [<img src="docs/screencaps/IMG_9249.PNG" alt="Jigsaw Puzzle Collector on iPhone, screenshot 2" width="250">](docs/screencaps/IMG_9249.PNG) | [<img src="docs/screencaps/IMG_9250.PNG" alt="Jigsaw Puzzle Collector on iPhone, screenshot 3" width="250">](docs/screencaps/IMG_9250.PNG) |
+| [<img src="docs/screencaps/IMG_9251.PNG" alt="Jigsaw Puzzle Collector on iPhone, screenshot 4" width="250">](docs/screencaps/IMG_9251.PNG) | [<img src="docs/screencaps/IMG_9252.PNG" alt="Jigsaw Puzzle Collector on iPhone, screenshot 5" width="250">](docs/screencaps/IMG_9252.PNG) | [<img src="docs/screencaps/IMG_9253.PNG" alt="Jigsaw Puzzle Collector on iPhone, screenshot 6" width="250">](docs/screencaps/IMG_9253.PNG) |
+| [<img src="docs/screencaps/IMG_9254.PNG" alt="Jigsaw Puzzle Collector on iPhone, screenshot 7" width="250">](docs/screencaps/IMG_9254.PNG) | [<img src="docs/screencaps/IMG_9255.PNG" alt="Jigsaw Puzzle Collector on iPhone, screenshot 8" width="250">](docs/screencaps/IMG_9255.PNG) | [<img src="docs/screencaps/IMG_9256.PNG" alt="Jigsaw Puzzle Collector on iPhone, screenshot 9" width="250">](docs/screencaps/IMG_9256.PNG) |
+
 A free, mobile-first puzzle collector. **Foundation + Bulk Photo Import MVP.** Signed-out browsing uses illustrative sample data; Add now supports private accounts, photo batches, fixture-assisted review and persisted physical copies. PWA/offline support, general catalogue editing and real valuations remain planned.
 
 ## Start (Windows 11 / WSL2 + Docker Desktop)
