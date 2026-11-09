@@ -1,12 +1,13 @@
 import {useState} from 'react';
 import {api} from '../import/api';
 import './SignOutButton.css';
+import {allowNavigation} from '../navigation';
 
 export function SignOutButton({onSignedOut}:{onSignedOut:()=>void}) {
   const [busy,setBusy]=useState(false);
   const [error,setError]=useState('');
   async function signOut() {
-    if(busy) return;
+    if(busy||!allowNavigation()) return;
     setBusy(true); setError('');
     try { await api('/auth/logout','POST'); onSignedOut(); }
     catch(error) { setError(error instanceof Error?error.message:'Could not sign out. Please retry.'); }

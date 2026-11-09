@@ -55,6 +55,30 @@ final class ImportApiTest extends TestCase {
         self::assertSame(array_reverse(array_slice($active,-3)),array_column($home['batches'],'id'));
         $this->cookie='';$this->csrf='';self::assertSame(401,$this->call('GET','/api/home')[0]);
     }
+    public function testCopyEditingIsPrivateRevisionProtectedAndPreservesItsSource(): void {
+        $db=Jigsaw\Database::connect();$owner=$this->user;
+        $db->exec("INSERT INTO puzzles(title) VALUES ('Original copy title')");$puzzle=(int)$db->lastInsertId();
+        $q=$db->prepare("INSERT INTO editions(puzzle_id,manufacturer,piece_count,owner_id) VALUES (?,'Original Maker',500,?)");$q->execute([$puzzle,$owner]);$edition=(int)$db->lastInsertId();
+        $provenance=['approved_fields'=>['title'=>'Original copy title'],'catalogue_verified'=>false];
+        $q=$db->prepare('INSERT INTO owned_copies(user_id,edition_id,provenance) VALUES (?,?,?)');$q->execute([$owner,$edition,json_encode($provenance)]);$first=(int)$db->lastInsertId();$q->execute([$owner,$edition,json_encode($provenance)]);$second=(int)$db->lastInsertId();
+        [$status,$before]=$this->call('GET',"/api/collection-copies/$first");self::assertSame(200,$status);self::assertSame(1,$before['copy']['edit_revision']);
+        $csrf=$this->csrf;$this->csrf='wrong';self::assertSame(403,$this->call('PATCH',"/api/collection-copies/$first",['revision'=>1,'fields'=>['title'=>'Blocked']])[0]);$this->csrf=$csrf;
+        [$status,$invalid]=$this->call('PATCH',"/api/collection-copies/$first",['revision'=>1,'fields'=>['edition_id'=>999]]);self::assertSame(422,$status);self::assertArrayHasKey('edition_id',$invalid['fields']);
+        [$status,$saved]=$this->call('PATCH',"/api/collection-copies/$first",['revision'=>1,'fields'=>['title'=>'Corrected copy','manufacturer'=>null,'piece_count'=>1000,'box_condition'=>'good','seal_status'=>'opened','completeness'=>'unchecked','storage_location'=>'Shelf 2','notes'=>'<b>Plain text note</b>']]);
+        self::assertSame(200,$status);self::assertSame(2,$saved['copy']['edit_revision']);self::assertSame($edition,(int)$saved['copy']['edition_id']);self::assertNull($saved['copy']['manufacturer']);
+        $otherCopy=$this->call('GET',"/api/collection-copies/$second")[1]['copy'];self::assertSame('Original copy title',$otherCopy['title']);self::assertSame(500,$otherCopy['piece_count']);self::assertNull($otherCopy['notes']);
+        self::assertSame(409,$this->call('PATCH',"/api/collection-copies/$first",['revision'=>1,'fields'=>['notes'=>'Stale device']])[0]);
+        self::assertSame(2,$this->call('PATCH',"/api/collection-copies/$first",['revision'=>2,'fields'=>[]])[1]['copy']['edit_revision']);
+        $home=$this->call('GET','/api/home')[1];self::assertSame(1500,$home['totals']['known_pieces']);self::assertSame(1,$home['totals']['manufacturers']);
+        [$status,$cleared]=$this->call('PATCH',"/api/collection-copies/$first",['revision'=>2,'fields'=>['piece_count'=>null,'storage_location'=>null,'notes'=>null]]);self::assertSame(200,$status);self::assertNull($cleared['copy']['piece_count']);
+        self::assertSame(500,$this->call('GET','/api/home')[1]['totals']['known_pieces']);
+        $q=$db->prepare('SELECT provenance FROM owned_copies WHERE id=?');$q->execute([$first]);self::assertSame($provenance,json_decode($q->fetchColumn(),true));
+        $q=$db->prepare('SELECT title FROM puzzles WHERE id=?');$q->execute([$puzzle]);self::assertSame('Original copy title',$q->fetchColumn());
+        $q=$db->prepare('SELECT piece_count FROM editions WHERE id=?');$q->execute([$edition]);self::assertSame(500,(int)$q->fetchColumn());
+        $q=$db->prepare('SELECT COUNT(*) FROM owned_copy_edits WHERE copy_id=?');$q->execute([$first]);self::assertSame(2,(int)$q->fetchColumn());
+        $cookie=$this->cookie;$csrf=$this->csrf;$this->setUp();self::assertSame(404,$this->call('GET',"/api/collection-copies/$first")[0]);self::assertSame(404,$this->call('PATCH',"/api/collection-copies/$first",['revision'=>3,'fields'=>['title'=>'Another owner']])[0]);
+        $this->cookie='';$this->csrf='';self::assertSame(401,$this->call('GET',"/api/collection-copies/$first")[0]);$this->cookie=$cookie;$this->csrf=$csrf;
+    }
     private function batch(): int {
         [$status, $batch] = $this->call('POST', '/api/import-batches', ['client_key'=>bin2hex(random_bytes(12))]);
         self::assertSame(201, $status); return $batch['id'];

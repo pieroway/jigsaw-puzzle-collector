@@ -8,7 +8,8 @@ final class HomeSummaryTest extends TestCase {
         $db->expects(self::exactly(2))->method('prepare')->willReturnCallback(function(string $sql) use($statement) {
             if(str_contains($sql,'owned_copies')) {
                 self::assertStringContainsString('c.user_id=?',$sql);
-                self::assertStringContainsString('LOWER(TRIM(e.manufacturer))',$sql);
+                self::assertStringContainsString('LOWER(TRIM(',$sql);
+                self::assertStringContainsString('c.field_overrides',$sql);
                 self::assertStringNotContainsString('LIMIT 1000',$sql);
             } else {
                 self::assertStringContainsString('b.user_id=?',$sql);self::assertStringContainsString('b.deleted_at IS NULL',$sql);

@@ -1,0 +1,16 @@
+.copy-editor {margin:24px 0;padding:22px;border:1px solid var(--border);border-radius:20px;background:var(--surface);color:var(--text)}
+.copy-editor h2 {font-size:24px;margin-bottom:8px}
+.copy-editor>p {color:var(--muted);font-size:13px;line-height:1.6}
+.copy-editor fieldset {border:0;padding:0;margin:22px 0}
+.copy-editor legend {font-weight:600;margin-bottom:14px}
+.copy-edit-grid {display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}
+.copy-edit-grid label {display:flex;flex-direction:column;gap:7px;font-size:13px;min-width:0}
+.copy-edit-grid input,.copy-edit-grid select,.copy-edit-grid textarea {width:100%;min-height:44px;border:1px solid var(--border);border-radius:11px;padding:11px 12px;background:var(--bg);color:var(--text);font:inherit;font-size:16px}
+.copy-edit-grid textarea {resize:vertical;line-height:1.5}
+.copy-edit-grid label:has(textarea) {grid-column:1/-1}
+.copy-edit-grid [aria-invalid=true] {border-color:#b84a43}
+.copy-field-error {color:#b84a43;font-size:12px}
+html[data-theme=dark] .copy-field-error {color:#ffb0a6}
+.copy-notes {white-space:pre-wrap;overflow-wrap:anywhere;color:var(--muted);line-height:1.6}
+.copy-editor .import-actions {flex-wrap:wrap}
+@media(max-width:600px) {.copy-editor {padding:18px 14px}.copy-edit-grid {grid-template-columns:1fr}}

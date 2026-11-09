@@ -48,6 +48,11 @@ try {
     $deletion=new Jigsaw\BatchDeletionService($db,new ImageStore(getenv('PRIVATE_STORAGE_PATH') ?: '/var/lib/jigsaw/photos'));
     if($path==='/api/import-batches/cleanup'&&$method==='POST') respond(['cleanup_pending'=>$deletion->cleanup($owner)]);
     if ($path==='/api/collection'&&$method==='GET') respond(['copies'=>$service->collection($owner)]);
+    if(preg_match('#^/api/collection-copies/([1-9][0-9]*)$#',$path,$copyMatch)) {
+        $copies=new Jigsaw\CopyService($db,$service);$copyId=(int)$copyMatch[1];
+        if($method==='GET')respond(['copy'=>$copies->read($copyId,$owner)]);
+        if($method==='PATCH')respond(['copy'=>$copies->update($copyId,$owner,input())]);
+    }
     if ($path==='/api/home'&&$method==='GET') respond([...(new Jigsaw\HomeSummary($db))->get($owner),'recent'=>$service->collection($owner,6)]);
     if ($path==='/api/import-batches') {
         if ($method==='POST') { $data=input(); respond($service->create($owner,ImportService::key($data['client_key'] ?? null)),201); }
@@ -84,5 +89,6 @@ try {
     }
     throw new HttpError(404,'Not found');
 } catch (HttpError $e) { respond(['error'=>$e->getMessage()],$e->status); }
+catch (Jigsaw\CopyValidationError $e) { respond(['error'=>$e->getMessage(),'fields'=>$e->errors],422); }
 catch (InvalidArgumentException $e) { respond(['error'=>$e->getMessage()],422); }
 catch (Throwable $e) { error_log((string)$e); respond(['error'=>'The operation could not finish. Your saved records are safe; retry or contact the administrator.'],500); }

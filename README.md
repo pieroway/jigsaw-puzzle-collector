@@ -17,6 +17,8 @@ For another device on the same Wi-Fi, open `http://<this-PC-Wi-Fi-IPv4>:5173`. V
 
 ## Included
 
+- **Edit existing copies:** private metadata corrections, condition/seal/completeness, storage and notes; Save/Cancel, stale-revision handling, unsaved-change protection and separate edit history. Shared edition data, import provenance and original images are preserved. See [copy editing](docs/COPY-EDITING.md).
+
 - **Home:** private collection-wide totals, six recent puzzles with shared details, and up to three actionable import batches with direct resume. Signed-out welcome/sample browsing, empty states and retry controls use existing light/dark and mobile layouts.
 
 - **Studio presentation:** manufacturer-aware upright orientation, saved manual rotations, configurable millimetre box depths and cameras, transparent WebP assets, private studio gallery images and Original/Corrected/Studio details. See [the studio guide](docs/STUDIO-PRESENTATION.md). During development use `make test-unit-dev` before `make dev`; reserve the full quality gate for production promotion.

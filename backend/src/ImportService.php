@@ -238,10 +238,11 @@ final class ImportService {
         if($variant==='image'&&($meta['decision'] ?? '')==='accepted') return ['path'=>$this->store->path($meta['asset_key']).'.thumbnail.jpg','mime'=>'image/jpeg'];
         return ['path'=>$this->store->path($image['storage_key']).'.jpg','mime'=>'image/jpeg'];
     }
-    public function collection(int $owner,int $limit=1000): array {
+    public function collection(int $owner,int $limit=1000,?int $copyId=null): array {
         $limit=max(1,min(1000,$limit));
-        $copies=$this->query('SELECT c.*,e.manufacturer,e.sku,e.piece_count,e.release_year,p.title,i.preprocessing AS copy_preprocessing FROM owned_copies c JOIN editions e ON e.id=c.edition_id JOIN puzzles p ON p.id=e.puzzle_id LEFT JOIN import_items i ON i.id=c.import_item_id WHERE c.user_id=? ORDER BY c.created_at DESC,c.id DESC LIMIT '.$limit,[$owner])->fetchAll();
+        $copies=$this->query('SELECT c.*,e.manufacturer,e.sku,e.piece_count,e.release_year,p.title,i.preprocessing AS copy_preprocessing FROM owned_copies c JOIN editions e ON e.id=c.edition_id JOIN puzzles p ON p.id=e.puzzle_id LEFT JOIN import_items i ON i.id=c.import_item_id WHERE c.user_id=?'.($copyId!==null?' AND c.id=?':'').' ORDER BY c.created_at DESC,c.id DESC LIMIT '.$limit,$copyId!==null?[$owner,$copyId]:[$owner])->fetchAll();
         foreach ($copies as &$copy) {
+            $copy=CopyRules::effective($copy);
             $copy['provenance']=json_decode($copy['provenance'] ?? 'null',true); $id=$copy['import_item_id']; $prefix='/api/import-items/'.$id;
             $copy['image_url']=$id?$prefix.'/image':null;
             $meta=json_decode($copy['copy_preprocessing'] ?? 'null',true); unset($copy['copy_preprocessing']);

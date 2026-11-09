@@ -12,6 +12,21 @@ const copies=[
 ];
 beforeEach(()=>{vi.clearAllMocks();vi.mocked(api).mockResolvedValue({copies});});
 afterEach(cleanup);
+it('edits a copy privately and immediately refreshes its gallery metadata and totals',async()=>{
+  const source={...copies[2],edit_revision:1,storage_location:null,notes:null};const saved={...source,title:'Corrected Garden',manufacturer:'New Maker',piece_count:1500,notes:'Shelf note',edit_revision:2};
+  vi.mocked(api).mockImplementation(async(path,method)=>path==='/collection'?{copies}:method==='PATCH'?{copy:saved}:{copy:source});
+  const user=userEvent.setup();render(<PrivateCollection onAdd={vi.fn()}/>);
+  await user.click(await screen.findByRole('button',{name:/Night Garden/}));await user.click(screen.getByRole('button',{name:'Edit'}));
+  const title=await screen.findByLabelText('Title');await user.clear(title);await user.type(title,'Corrected Garden');
+  const confirm=vi.spyOn(window,'confirm').mockReturnValue(false);
+  await user.keyboard('{Escape}');expect(screen.getByRole('form',{name:'Edit your copy'})).toBeTruthy();
+  await user.click(screen.getByRole('button',{name:/Collection/}));expect(screen.getByRole('form',{name:'Edit your copy'})).toBeTruthy();confirm.mockRestore();
+  await user.click(screen.getByRole('button',{name:'Save changes'}));await screen.findByText('Changes saved.');
+  expect(screen.getByRole('heading',{name:'Corrected Garden'})).toBeTruthy();expect(screen.getByText('Shelf note')).toBeTruthy();
+  await user.click(screen.getByRole('button',{name:/Collection/}));expect(screen.getByRole('button',{name:/Corrected Garden/})).toBeTruthy();
+  expect(within(screen.getByRole('group',{name:'Collection totals'})).getByText('3,000')).toBeTruthy();
+  await user.type(screen.getByLabelText('Search your collection'),'New Maker');expect(screen.getAllByTestId('private-copy')).toHaveLength(1);
+});
 
 it('shows real collection totals and combines manufacturer, piece-count and search filters',async()=>{
   const user=userEvent.setup();render(<PrivateCollection onAdd={vi.fn()}/>);

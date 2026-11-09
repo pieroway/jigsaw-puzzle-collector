@@ -2,6 +2,8 @@
 
 ## Visual direction
 
+Private Puzzle Details includes **Edit**, opening a prefilled form with **Puzzle information** and **My physical copy** groups. Clearly state that corrections apply only to this copy. Provide Title, Manufacturer, Piece count, Product number, Release year, Box condition, Seal status, Completeness, Storage location and plain-text Notes. Blank nullable fields mean Unknown; title is required. Use two columns on wide screens and one on phones, 44 px controls and 16 px input text to avoid iPhone focus zoom. Show field-specific errors, disable duplicate saves/Cancel while saving and retain drafts on failures. A stale revision offers **Load latest saved values**, explicitly discarding the draft only after confirmation. Cancel returns to saved details; Save announces success and restores focus to Edit. Back, Escape, tab changes and sign-out confirm before discarding dirty changes; saving blocks navigation. Warn on refresh/closing while dirty. Preserve existing photo choices, themes, safe areas and motion preferences; notes render as text, not markup.
+
 Warm, richly tactile Apple Books-inspired interface: ivory light surfaces, charcoal dark surfaces, generous breathing room, elegant typography, softly rounded cards, understated shadows, photography-forward layouts. See `docs/design/mockups/` for approved visual references. They are concept references, not pixel-perfect source files.
 
 ## Navigation

@@ -39,6 +39,8 @@ A delightful, serious, free collector-first database for physical jigsaw puzzles
 
 ## Non-functional requirements
 
+Owners can edit existing physical copies from the shared Home/Collection details screen. The MVP supports private title/manufacturer/piece-count/product-number/year corrections plus box condition, seal, completeness, storage and notes. Corrections affect only the selected copy; shared identities/editions, other copies, original photographs and immutable import provenance stay unchanged. Use optimistic revisions to prevent silent cross-device overwrites and record successful edits in separate history. Save updates cards, search/filter data and Home totals; Cancel discards the draft. Warn before unsaved Back/Escape/tab/sign-out/browser navigation. Photo replacement, pricing/valuations, canonical catalogue editing and history UI are deferred.
+
 Home is a personal overview, separate from the complete Collection library. Authenticated Home shows exact owner-wide puzzle/manufacturer/known-piece totals, up to three unfinished import batches with actionable state counts, and the six newest physical copies. Batch actions resume the selected batch; recent cards reuse existing private Puzzle Details and restore Home focus/scroll on return. Hide finished/deleted batches. Signed-out Home explains the app and links to the illustrative collection; adding remains disabled until header authentication. Include loading, retryable error and first-puzzle states. Do not fabricate wishlist, recommendations, completion activity or valuations.
 
 Authentication belongs in the main header/account screen, separate from Add. Show Log in when signed out and Sign out when signed in. Disable adding/importing until authenticated; keep backend owner/session/CSRF enforcement. Protect mobile header controls from safe-area and browser-edge blur with opaque clearance and consistent detail positioning.
@@ -52,4 +54,4 @@ Reading orientation is evaluated after rectification at all four quarter-turns u
 
 ## Out of scope for current starter
 
-The Bulk Photo Import MVP now adds local session accounts, private photo uploads, fixture-assisted review and persisted private owned copies. Full catalogue search/moderation, general collection editing, monetary valuations, CSV import/export, production hosting and production deployment remain out of scope. See `docs/BULK-PHOTO-IMPORT.md` for exact scope and limits.
+The Bulk Photo Import MVP now adds local session accounts, private photo uploads, fixture-assisted review and persisted private owned copies. Full catalogue search/moderation, canonical catalogue editing and copy management beyond the editing MVP, monetary valuations, CSV import/export, production hosting and production deployment remain out of scope. See `docs/BULK-PHOTO-IMPORT.md` for exact scope and limits.

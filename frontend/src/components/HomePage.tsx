@@ -3,6 +3,7 @@ import {ArrowRight,BookOpen,Plus} from 'lucide-react';
 import {api} from '../import/api';
 import {PrivateCopyDetails,type Copy} from '../import/PrivateCopyDetails';
 import './HomePage.css';
+import {allowNavigation} from '../navigation';
 type BatchSummary={id:number;created_at:string;remaining:number;image_review:number;needs_review:number;failed:number;approved:number;queued:number;processing:number};
 type Summary={totals:{puzzles:number;manufacturers:number;known_pieces:number};batches:BatchSummary[];recent:Copy[]};
 type Props={signedIn:boolean;sessionReady:boolean;onCollection:()=>void;onAdd:()=>void;onResume:(id:number)=>void};
@@ -13,20 +14,26 @@ export function HomePage({signedIn,sessionReady,onCollection,onAdd,onResume}:Pro
   const [data,setData]=useState<Summary|null>(null);const [error,setError]=useState('');const [attempt,setAttempt]=useState(0);
   const [selected,setSelected]=useState<Copy|null>(null);const root=useRef<HTMLDivElement>(null);
   const scroll=useRef(0);const returnCopy=useRef<number|null>(null);
+  const generation=useRef(0);
   useEffect(()=>{
-    let alive=true;setData(null);setError('');setSelected(null);
+    let alive=true;generation.current++;setData(null);setError('');setSelected(null);
     if(signedIn&&sessionReady) void api<Summary>('/home').then(value=>{if(alive)setData(value);}).catch(reason=>{if(alive)setError(reason instanceof Error?reason.message:'Home could not load. Please retry.');});
-    return ()=>{alive=false;};
+    return ()=>{alive=false;generation.current++;};
   },[signedIn,sessionReady,attempt]);
   useLayoutEffect(()=>{
     const scroller=root.current?.closest('.scroll-area');
     if(selected) {if(scroller)scroller.scrollTop=0;root.current?.querySelector<HTMLButtonElement>('.back-button')?.focus();}
     else if(returnCopy.current!==null) {if(scroller)scroller.scrollTop=scroll.current;root.current?.querySelector<HTMLButtonElement>(`[data-home-copy-id="${returnCopy.current}"]`)?.focus({preventScroll:true});returnCopy.current=null;}
-  },[selected]);
-  useEffect(()=>{const escape=(event:KeyboardEvent)=>{if(event.key==='Escape')setSelected(null);};window.addEventListener('keydown',escape);return()=>window.removeEventListener('keydown',escape);},[]);
+  },[selected?.id]);
+  useEffect(()=>{const escape=(event:KeyboardEvent)=>{if(event.key==='Escape'&&allowNavigation())setSelected(null);};window.addEventListener('keydown',escape);return()=>window.removeEventListener('keydown',escape);},[]);
   function open(copy:Copy) {scroll.current=root.current?.closest('.scroll-area')?.scrollTop??0;returnCopy.current=copy.id;setSelected(copy);}
+  function updated(copy:Copy) {
+    const current=generation.current;
+    setSelected(copy);setData(old=>old?{...old,recent:old.recent.map(value=>value.id===copy.id?copy:value)}:old);
+    void api<Summary>('/home').then(value=>{if(current===generation.current)setData(value);}).catch(()=>{if(current===generation.current)setError('Your copy is saved, but Home totals could not refresh. Use Retry Home.');});
+  }
   return <div ref={root} className="home-page private-collection">
-    {signedIn&&selected?<PrivateCopyDetails key={selected.id} copy={selected} onBack={()=>setSelected(null)} backLabel="Home"/>:<>
+    {signedIn&&selected?<PrivateCopyDetails key={selected.id} copy={selected} onBack={()=>setSelected(null)} onUpdated={updated} backLabel="Home"/>:<>
       <header className="page-heading collection-heading home-heading"><div><div className="eyebrow">A HOME FOR EVERY PIECE</div><h1>Welcome home<span className="title-dot">.</span></h1><p>A little joy, piece by piece.</p></div></header>
       <div className="home-intro">
         {!sessionReady?<p role="status">Opening your Home…</p>:!signedIn?<p>Your puzzles, beautifully kept. Browse the sample collection, or log in using the header to start your own.</p>:data?<p className="home-totals">{data.totals.puzzles.toLocaleString()} puzzles · {data.totals.manufacturers.toLocaleString()} manufacturers <span>{data.totals.known_pieces.toLocaleString()} known pieces in your collection</span></p>:!error&&<p role="status">Gathering your latest puzzles…</p>}

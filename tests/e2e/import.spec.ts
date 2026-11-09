@@ -51,6 +51,29 @@ test('ten photos: edit, review, resume, import privately and retry safely', asyn
   await expect(page.locator('.import-detail>img')).toHaveAttribute('src',/studio-image/);
   await page.keyboard.press('Escape');
   await expect(page.getByTestId('private-copy').first()).toBeFocused();
+  // Existing copies can be corrected without changing their source photograph.
+  await page.getByTestId('private-copy').first().click();
+  const originalUrl=await page.getByRole('link',{name:'Download untouched original'}).getAttribute('href');
+  const originalBytes=await(await page.request.get(originalUrl!)).body();
+  await page.getByRole('button',{name:'Edit',exact:true}).click();
+  await page.getByLabel('Title',{exact:true}).fill('Edited after import');
+  await page.getByLabel('Manufacturer',{exact:true}).fill('My private maker');
+  await page.getByLabel('Piece count',{exact:true}).fill('1234');
+  await page.getByLabel('Storage location',{exact:true}).fill('Shelf 7');
+  await page.getByLabel('Notes',{exact:true}).fill('<b>Private note</b>');
+  page.once('dialog',dialog=>dialog.dismiss());await page.keyboard.press('Escape');
+  await expect(page.getByRole('form',{name:'Edit your copy'})).toBeVisible();
+  await page.getByRole('button',{name:'Save changes',exact:true}).click();
+  await expect(page.getByText('Changes saved.',{exact:true})).toBeVisible();
+  await expect(page.getByRole('heading',{name:'Edited after import',exact:true})).toBeVisible();
+  await expect(page.getByText('<b>Private note</b>',{exact:true})).toBeVisible();
+  expect(await(await page.request.get(originalUrl!)).body()).toEqual(originalBytes);
+  await page.reload();await page.getByRole('button',{name:/Edited after import/}).click();
+  await expect(page.getByText('Shelf 7',{exact:true})).toBeVisible();
+  await page.getByRole('button',{name:'Edit',exact:true}).click();
+  await page.getByLabel('Notes',{exact:true}).fill('Unsaved note');
+  await page.getByRole('button',{name:'Cancel',exact:true}).click();
+  await expect(page.getByText('<b>Private note</b>',{exact:true})).toBeVisible();
 });
 
 test('invalid photos show actionable errors and can be retried without adding an item', async ({ page }) => {

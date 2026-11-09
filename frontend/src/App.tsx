@@ -9,6 +9,7 @@ import {SignOutButton} from './components/SignOutButton';
 import {LoginPage} from './components/LoginPage';
 import './collection-header.css';
 import {HomePage} from './components/HomePage';
+import {allowNavigation} from './navigation';
 
 type Theme = 'system' | 'light' | 'dark';
 type Motion = 'system' | 'on' | 'off';
@@ -109,7 +110,7 @@ export default function App() {
   useEffect(() => { const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape' && selected) closePuzzle(); }; window.addEventListener('keydown', onKey); return () => window.removeEventListener('keydown', onKey); });
   const nav = [{ name: 'Home', icon: Home }, { name: 'Collection', icon: BookOpen }, { name: 'Add', icon: Plus }, { name: 'Explore', icon: Compass }, { name: 'Profile', icon: UserRound }];
   function signedOut() { setSignedIn(false);setLoginOpen(false);setSelected(null);setOverlay(null);setTransitioning(false);setFadingOut(false);setTab('Collection'); }
-  function navigate(name:string,batchId?:number) {if(transitioning||loginBusy||(name==='Add'&&!signedIn))return;setRequestedBatch(name==='Add'?batchId??null:null);setLoginOpen(false);setSelected(null);setTab(name);}
+  function navigate(name:string,batchId?:number) {if(transitioning||loginBusy||(name==='Add'&&!signedIn)||!allowNavigation())return;setRequestedBatch(name==='Add'?batchId??null:null);setLoginOpen(false);setSelected(null);setTab(name);}
   return <div className="app-shell" style={{ '--detail-duration': `${speed}ms` } as CSSProperties}>
     <aside className="desktop-sidebar"><div className="brand"><span className="brand-mark">✦</span><div><strong>Jigsaw</strong><small>PUZZLE COLLECTOR</small></div></div><p className="side-caption">Your puzzles, beautifully kept.</p><nav aria-label="Main navigation">{nav.map(({ name, icon: Icon }) => <button key={name} disabled={loginBusy||(name==='Add'&&!signedIn)} title={name==='Add'&&!signedIn?'Log in to add puzzles':undefined} className={`side-nav ${tab === name ? 'active' : ''}`} onClick={() => navigate(name)}><Icon size={19}/>{name}</button>)}</nav><div className="side-footer">A home for every piece. <span>✦</span></div></aside>
     <main className="device-frame">

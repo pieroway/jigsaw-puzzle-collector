@@ -2,6 +2,7 @@ import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { api } from './api';
 import {ArrowUpDown,ChevronDown,Grid2X2,List,Plus,Search,Settings2,SlidersHorizontal,X} from 'lucide-react';
 import {PrivateCopyDetails,type Copy} from './PrivateCopyDetails';
+import {allowNavigation} from '../navigation';
 const makerKey=(value:string|null)=>value?.trim()?`brand:${value.trim().toLocaleLowerCase()}`:'unknown';
 export function PrivateCollection({ onAdd,onSettings }: { onAdd: () => void;onSettings?:()=>void }) {
   const [copies,setCopies] = useState<Copy[]>([]); const [selected,setSelected] = useState<Copy | null>(null);
@@ -24,13 +25,13 @@ export function PrivateCollection({ onAdd,onSettings }: { onAdd: () => void;onSe
     const scroller = root.current?.closest('.scroll-area');
     if (selected) { if (scroller) scroller.scrollTop = 0; root.current?.querySelector<HTMLButtonElement>('.back-button')?.focus(); }
     else if (returnCopy.current !== null) { if (scroller) scroller.scrollTop = scroll.current; root.current?.querySelector<HTMLButtonElement>(`[data-copy-id="${returnCopy.current}"]`)?.focus({ preventScroll:true }); returnCopy.current = null; }
-  },[selected]);
+  },[selected?.id]);
   useEffect(() => { void api<{ copies: Copy[] }>('/collection').then(x => setCopies(x.copies)).catch(e => setError(e.message)).finally(() => setLoaded(true)); }, []);
-  useEffect(() => { const handle = (e: KeyboardEvent) => { if (e.key === 'Escape') setSelected(null); }; window.addEventListener('keydown',handle); return () => window.removeEventListener('keydown',handle); }, []);
+  useEffect(() => { const handle = (e: KeyboardEvent) => { if (e.key === 'Escape'&&allowNavigation()) setSelected(null); }; window.addEventListener('keydown',handle); return () => window.removeEventListener('keydown',handle); }, []);
   return <div className="private-collection" ref={root}>
     {error && <p role="alert" className="import-error">{error}</p>}
     {!loaded && <p role="status">Opening your collection…</p>}
-    {selected ? <PrivateCopyDetails copy={selected} onBack={()=>setSelected(null)}/> : <>
+    {selected ? <PrivateCopyDetails copy={selected} onBack={()=>setSelected(null)} onUpdated={copy=>{setCopies(old=>old.map(value=>value.id===copy.id?copy:value));setSelected(copy);}}/> : <>
       <header className="page-heading collection-heading"><div><div className="eyebrow">YOUR LITTLE CORNER OF WONDER</div><h1>My Collection<span className="title-dot">.</span></h1><p>Every puzzle has a story worth keeping.</p></div>{onSettings&&<button className="round-icon" aria-label="Collection settings" onClick={onSettings}><Settings2 size={20}/></button>}</header>
       <div className="stats" role="group" aria-label="Collection totals">
         <div><span className="stats-icon" aria-hidden="true">✦</span><strong>{loaded?copies.length.toLocaleString():'—'}</strong><small>Puzzles</small></div>
