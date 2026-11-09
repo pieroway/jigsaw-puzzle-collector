@@ -11,8 +11,10 @@ beforeEach(()=>{vi.clearAllMocks();vi.mocked(api).mockResolvedValue({copy:{...co
 it('checks the latest revision and requires confirmation while allowing cancellation',async()=>{
   const user=userEvent.setup();render(<DeleteCopyButton copy={copy} disabled={false} onRemoved={vi.fn()} onUnavailable={vi.fn()}/>);
   await user.click(screen.getByRole('button',{name:'Delete this copy'}));await screen.findByRole('alertdialog',{name:'Delete Garden Birds'});
+  expect(screen.queryByRole('button',{name:'Delete this copy'})).toBeNull();
   expect(screen.getByText(/Photos still used by import history/)).toBeTruthy();
   await user.click(screen.getByRole('button',{name:'Keep copy'}));expect(screen.queryByRole('alertdialog')).toBeNull();expect(api).toHaveBeenCalledTimes(1);
+  expect(document.activeElement).toBe(screen.getByRole('button',{name:'Delete this copy'}));
   await user.click(screen.getByRole('button',{name:'Delete this copy'}));await screen.findByRole('alertdialog');await user.keyboard('{Escape}');
   expect(screen.queryByRole('alertdialog')).toBeNull();expect(document.activeElement).toBe(screen.getByRole('button',{name:'Delete this copy'}));
 });

@@ -4,6 +4,7 @@ import { toDraft, reviewPayload, type Batch, type ImportItem } from './model';
 import './import.css';
 import { ImageReview } from './ImageReview';
 import {DeleteBatchButton} from './DeleteBatchButton';
+import {PhotoFilePicker} from './PhotoFilePicker';
 
 type Props = { onViewCollection: () => void; onSession: (signedIn: boolean) => void; initialBatchId?:number|null };
 type Pending = { key: string; name: string; file?: File; state: 'uploading' | 'failed'; error?: string };
@@ -110,7 +111,7 @@ export function ImportWorkspace({ onViewCollection, onSession,initialBatchId }: 
       {batch && <>
         <div className="photo-drop" onDragOver={e => e.preventDefault()} onDrop={e => { e.preventDefault(); if (!busy) void upload(Array.from(e.dataTransfer.files)); }}>
           <strong>Add front-of-box photos</strong><p>Drop photos here or choose from your library. JPEG, PNG or WebP; up to 12 MB and 25 megapixels each. Convert HEIC photos to JPEG first.</p>
-          <label className="file-picker">Choose puzzle photos<input aria-label="Choose puzzle photos" type="file" accept="image/jpeg,image/png,image/webp" multiple disabled={busy} onChange={e => { const files = Array.from(e.target.files ?? []); e.target.value = ''; void upload(files); }} /></label>
+          <PhotoFilePicker key={batch.id} disabled={busy} onFiles={files=>void upload(files)}/>
           <p>After an interruption, select the same files again to retry with their saved keys.</p>
         </div>
         <div className="import-summary" aria-label="Batch summary" aria-live="polite">{['uploaded','image_review','identified','needs_review','approved','imported','failed'].map(key => <div key={key}><strong data-testid={`count-${key}`}>{batch.summary[key]}</strong><span>{key.replace('_',' ')}</span></div>)}</div>

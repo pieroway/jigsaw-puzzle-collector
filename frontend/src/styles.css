@@ -4,6 +4,15 @@
 @keyframes gentle-fade { from { opacity: 0 } to { opacity: 1 } }
 .detail-scroll.reduced { animation: gentle-fade 120ms ease-out; }
 html[data-reduced-motion=true] .puzzle-card:hover { transform: none; }
+
+/* iOS zooms small focused fields. Preserve user zoom and desktop sizing. */
+@media (max-width:900px), (pointer:coarse) {
+  #root input:not([type=checkbox]):not([type=radio]):not([type=range]):not([type=file]):not([type=button]):not([type=submit]):not([type=reset]),
+  #root select,
+  #root textarea {
+    font-size:max(16px,1em);
+  }
+}
 @keyframes gentle-fade-out { from { opacity: 1 } to { opacity: 0 } }
 .detail-scroll.reduced[data-leaving=true] { animation: gentle-fade-out 120ms ease-in forwards; }
 

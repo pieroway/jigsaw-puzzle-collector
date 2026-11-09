@@ -14,6 +14,20 @@ beforeEach(()=>{
   vi.mocked(session).mockResolvedValue({user:{id:1,email:'collector@example.test'},csrf:'token'});
 });
 afterEach(()=>{cleanup();vi.unstubAllGlobals();});
+it('opts into the compact test theme, persists it, and preserves colour and motion choices',async()=>{
+  localStorage.setItem('jigsaw-tab','Profile');const user=userEvent.setup();const first=render(<App/>);
+  const layout=within(screen.getByRole('group',{name:'Layout theme'}));
+  expect(layout.getByRole('button',{name:'Standard'}).getAttribute('aria-pressed')).toBe('true');
+  await user.click(layout.getByRole('button',{name:'Compact (test)'}));
+  expect(document.documentElement.dataset.layoutTheme).toBe('compact');expect(localStorage.getItem('jigsaw-layout-theme')).toBe('compact');
+  expect(document.documentElement.dataset.theme).toBe('dark');expect(document.documentElement.dataset.reducedMotion).toBe('true');
+  await user.click(within(screen.getByRole('group',{name:'Appearance'})).getByRole('button',{name:'Light'}));
+  expect(document.documentElement.dataset.theme).toBe('light');expect(document.documentElement.dataset.layoutTheme).toBe('compact');
+  first.unmount();render(<App/>);
+  expect(screen.getByRole('button',{name:'Compact (test)'}).getAttribute('aria-pressed')).toBe('true');
+  await user.click(screen.getByRole('button',{name:'Standard'}));expect(document.documentElement.dataset.layoutTheme).toBe('standard');
+  expect(document.documentElement.dataset.theme).toBe('light');expect(localStorage.getItem('jigsaw-layout-theme')).toBe('standard');
+});
 it('opens Home from navigation and returns to the private collection',async()=>{
   vi.mocked(api).mockResolvedValue({totals:{puzzles:0,manufacturers:0,known_pieces:0},batches:[],recent:[]});
   const user=userEvent.setup();render(<App/>);await screen.findByText('My private puzzles');

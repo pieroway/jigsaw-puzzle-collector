@@ -5,8 +5,14 @@ html[data-theme=dark] .copy-danger {color:#ffb0a6;border-color:#c8756d}
 .copy-delete-confirm h2 {font-size:22px}
 .copy-delete-confirm p,.copy-removal-notice p {font-size:13px;line-height:1.65;color:var(--muted);overflow-wrap:anywhere}
 .copy-delete-confirm .import-actions {flex-wrap:wrap}
-.copy-removal-notice {margin:0 0 20px;padding:15px 18px;border:1px solid var(--border);border-radius:14px;background:var(--surface)}
+.copy-removal-overlay {position:fixed;z-index:110;top:calc(env(safe-area-inset-top,0px) + 76px);left:max(16px,env(safe-area-inset-left,0px));right:max(16px,env(safe-area-inset-right,0px));pointer-events:none;display:flex;justify-content:center}
+.copy-removal-notice {position:relative;width:min(100%,520px);padding:15px 54px 15px 18px;border:1px solid var(--border);border-radius:14px;background:var(--surface);box-shadow:0 8px 28px #0003;pointer-events:auto;touch-action:pan-x;opacity:1;transition:opacity 550ms ease,transform 550ms ease}
+.copy-removal-notice[data-phase=fade],.copy-removal-notice[data-phase=swipe] {opacity:0;pointer-events:none}
+.copy-removal-notice[data-phase=swipe] {transform:translateY(calc(-100% - 100px - env(safe-area-inset-top,0px)))}
+html[data-reduced-motion=true] .copy-removal-notice {transition:opacity 120ms ease}
+html[data-reduced-motion=true] .copy-removal-notice[data-phase=swipe] {transform:none}
 .copy-removal-notice p {margin:0}
 .copy-removal-notice button {min-height:44px;margin-top:8px;padding:9px 14px;border:1px solid var(--border);border-radius:10px;background:var(--bg);color:var(--text)}
+.copy-removal-notice .copy-removal-close {position:absolute;top:6px;right:6px;width:44px;margin:0;padding:0;border:0;background:transparent;display:grid;place-items:center}
 .copy-danger:disabled {opacity:.5;cursor:default}
 @media(max-width:600px){.copy-delete-confirm{padding:18px 14px}}

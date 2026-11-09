@@ -1,0 +1,109 @@
+/* Standard mobile layout, copied from the approved Compact test baseline. */
+@media (max-width:900px) {
+  html[data-layout-theme] .file-picker {--file-picker-font:8.67px}
+  html[data-layout-theme] #root {font-size:11.56px}
+  html[data-layout-theme] .topline-brand {font-size:14.45px}
+  html[data-layout-theme] .topline-right {font-size:7.225px}
+  html[data-layout-theme] .eyebrow {font-size:7.225px}
+  html[data-layout-theme] .collection-heading .eyebrow {font-size:6.503px}
+  html[data-layout-theme] .stats small {font-size:7.225px}
+  html[data-layout-theme] .stats em {font-size:6.503px}
+  html[data-layout-theme] .stats-icon {font-size:14.45px}
+  html[data-layout-theme] .section-title span {font-size:6.503px}
+  html[data-layout-theme] :is(.chip,.collection-tools,.import-account,.import-state,.evidence,.collection-filter-panel label,.collection-filter-panel button,.batch-delete>button,.copy-field-error,.image-review p,.photo-comparison figcaption,.corner-inputs strong,.import-notice p,.photo-drop p,.evidence p,.home-totals span,.home-batch small,.home-batch>span>span,.segmented button,.detail-note p,.sign-out-control button,.sign-out-control [role=alert]) {font-size:8.67px}
+  html[data-layout-theme] .puzzle-copy strong {font-size:9.393px}
+  html[data-layout-theme] .puzzle-copy>span {font-size:7.948px}
+  html[data-layout-theme] .puzzle-copy small {font-size:7.225px}
+  html[data-layout-theme] :is(.collection-privacy,.collection-add-link,.import-summary span,.setting-status,.owned-badge) {font-size:7.948px}
+  html[data-layout-theme] .collection-art>span {font-size:8.67px}
+  html[data-layout-theme] :is(.import-workspace label,.copy-edit-grid label,.copy-editor>p,.import-detail>p,.copy-delete-confirm p,.copy-removal-notice p,.copy-danger,.home-secondary,.primary-action,.setting-card p,.preview-page p,.detail-heading p,.detail-info>div,.batch-delete-confirm p,.studio-controls summary,.image-review legend) {font-size:9.393px}
+  html[data-layout-theme] .import-workspace .corner-inputs label {font-size:7.948px}
+  html[data-layout-theme] .import-summary strong {font-size:18.063px}
+  html[data-layout-theme] .review-content h2 {font-size:13.728px}
+  html[data-layout-theme] .image-review h3 {font-size:15.173px}
+  html[data-layout-theme] :is(.home-intro>p,.home-empty p,.settings-page>p,.back-button,.detail-note strong) {font-size:10.115px}
+  html[data-layout-theme] .import-detail h2 {font-size:21.675px}
+  html[data-layout-theme] .copy-editor h2 {font-size:17.34px}
+  html[data-layout-theme] .copy-delete-confirm h2 {font-size:15.895px}
+  html[data-layout-theme] .setting-card h2 {font-size:16.618px}
+  html[data-layout-theme] .bottom-nav small {font-size:7.225px}
+  html[data-layout-theme] .detail-heading h1 {font-size:20.953px}
+  html[data-layout-theme] .detail-body h2 {font-size:17.34px}
+  html[data-layout-theme] .detail-facts strong {font-size:10.115px}
+  html[data-layout-theme] .detail-facts small {font-size:7.225px}
+  /* Keep every editable field and select at a stable focus-safe size. */
+  html[data-layout-theme] #root :is(input,textarea,select) {font-size:16px}
+  html[data-layout-theme] .app-shell {--page-inline:12px;--header-inline:16px;--header-base:48px;--nav-base:56px}
+  html[data-layout-theme] .scroll-area {padding-top:18px}
+  html[data-layout-theme] .collection-heading {min-height:138px;margin-top:-18px;padding-top:16px;padding-bottom:18px;gap:6px}
+  html[data-layout-theme] .page-heading h1,
+  html[data-layout-theme] .private-collection .page-heading h1,
+  html[data-layout-theme] .settings-page h1 {font-size:21.675px}
+  html[data-layout-theme] .collection-heading p {font-size:8.67px}
+  html[data-layout-theme] .stats {gap:4px;margin-bottom:12px}
+  html[data-layout-theme] .stats strong {font-size:15.895px}
+  html[data-layout-theme] .collection-heading + .stats {margin-top:-38px}
+  html[data-layout-theme] .collection-heading + .stats > div {padding:5px 4px;border-width:3px;border-radius:12px}
+  html[data-layout-theme] .section-title h2 {font-size:14.45px}
+  html[data-layout-theme] .search-field {padding:5px 9px;min-height:44px;gap:6px;border-radius:10px}
+  html[data-layout-theme] .filter-row {margin:4px 0;gap:4px}
+  /* Draw a smaller pill inside its retained 44px touch target. */
+  html[data-layout-theme] .chip {position:relative;isolation:isolate;padding:4px 9px;min-height:44px;border:0;background:transparent}
+  html[data-layout-theme] .chip::before {content:"";position:absolute;inset:8px 0;z-index:-1;border-radius:20px;background:var(--chip);pointer-events:none}
+  html[data-layout-theme] .chip.active::before {background:var(--text)}
+  html[data-layout-theme] .chip-scroll {gap:5px}
+  html[data-layout-theme] .collection-tools {margin:8px 0 6px}
+  html[data-layout-theme] .puzzle-grid {gap:6px}
+  html[data-layout-theme] .collection-art,
+  html[data-layout-theme] .puzzle-art {aspect-ratio:1.12}
+  html[data-layout-theme] .puzzle-copy {padding:5px 6px}
+  html[data-layout-theme] .puzzle-copy>span {margin:2px 0 4px}
+  html[data-layout-theme] .private-grid.list-view .collection-art {width:84px;min-width:84px;aspect-ratio:1.4}
+  html[data-layout-theme] .import-detail .private-detail-title {font-size:18.785px;margin-top:18px}
+  html[data-layout-theme] .import-detail dl > div {padding:6px 0;gap:10px}
+  html[data-layout-theme] .copy-editor {padding:10px;margin:12px 0}
+  html[data-layout-theme] .copy-editor fieldset {margin:12px 0}
+  html[data-layout-theme] .setting-card {padding:10px;margin:10px 0}
+  html[data-layout-theme] .home-section {margin-bottom:16px}
+  html[data-layout-theme] .home-batch {padding:9px 11px;gap:10px}
+  html[data-layout-theme] .review-content {padding:10px}
+  html[data-layout-theme] .lucide {width:14px;height:14px}
+  html[data-layout-theme] .stats-icon {margin-bottom:2px}
+  html[data-layout-theme] :is(.puzzle-card,.setting-card,.home-batch,.home-empty,.review-card,.copy-editor,.copy-delete-confirm,.collection-filter-panel,.import-notice,.photo-drop,.import-detail dl,.detail-info,.detail-note) {border-radius:10px}
+  html[data-layout-theme] :is(.import-summary,.detail-facts) {gap:5px}
+  html[data-layout-theme] :is(.import-summary>div,.detail-facts>div) {padding:8px;border-radius:10px}
+  html[data-layout-theme] :is(.import-actions,.home-actions) {gap:6px;margin-top:12px;margin-bottom:12px}
+  html[data-layout-theme] :is(.import-actions button,.primary-action,.home-secondary,.copy-danger,.batch-delete>button,.collection-filter-panel button,.segmented button,.sign-out-control button) {padding:6px 10px;min-height:44px;border-radius:8px}
+  html[data-layout-theme] .segmented {gap:3px;padding:3px;border-radius:10px;margin-top:12px}
+  html[data-layout-theme] :is(.round-icon,.filter-icon) {position:relative;isolation:isolate;min-width:44px;min-height:44px;width:44px;height:44px;padding:0;border:0;background:transparent;display:grid;place-items:center}
+  html[data-layout-theme] :is(.round-icon,.filter-icon)::before {content:"";position:absolute;inset:8px;z-index:-1;background:var(--surface);border:1px solid var(--border);border-radius:8px;pointer-events:none}
+  html[data-layout-theme] .round-icon::before {border-radius:50%}
+  html[data-layout-theme] .collection-heading:not(.home-heading) {grid-template-columns:minmax(0,1fr) 44px}
+  html[data-layout-theme] .collection-sort {gap:4px}
+  html[data-layout-theme] .collection-sort>button {min-width:32px}
+  html[data-layout-theme] .bottom-nav {padding-top:4px}
+  html[data-layout-theme] .bottom-nav button {gap:2px}
+  html[data-layout-theme] .bottom-nav .add-nav .nav-icon {width:31px;height:31px;margin-top:-10px}
+  html[data-layout-theme] .copy-edit-grid {gap:10px}
+  html[data-layout-theme] .copy-edit-grid :is(input,select,textarea) {padding:2px 6px;border-radius:8px}
+  html[data-layout-theme] #root :is(input:not([type=checkbox]):not([type=radio]):not([type=range]):not([type=file]),textarea,select) {padding:2px 6px;min-height:28px}
+  html[data-layout-theme] .search-field {padding:1px 7px;min-height:34px}
+  html[data-layout-theme] #root .search-field input {padding:0;min-height:28px}
+  /* Compact controls should not inherit the Standard theme's 44px floor. */
+  html[data-layout-theme] #root button:not(.puzzle-card):not(.home-batch) {min-height:30px;padding-top:4px;padding-bottom:4px}
+  html[data-layout-theme] :is(.import-actions button,.primary-action,.home-secondary,.copy-danger,.batch-delete>button,.collection-filter-panel button,.segmented button,.sign-out-control button) {padding-left:8px;padding-right:8px}
+  html[data-layout-theme] .chip::before {inset:3px 0}
+  html[data-layout-theme] :is(.round-icon,.filter-icon) {min-width:32px;width:32px;height:32px}
+  html[data-layout-theme] :is(.round-icon,.filter-icon)::before {inset:3px}
+  html[data-layout-theme] .collection-heading:not(.home-heading) {grid-template-columns:minmax(0,1fr) 32px}
+  html[data-layout-theme] .collection-sort>button {min-width:28px}
+  html[data-layout-theme] .segmented {padding:2px}
+  html[data-layout-theme] #root button:is(.sign-out-control button,.collection-tools button):not(.puzzle-card):not(.home-batch) {display:inline-flex;align-items:center;justify-content:center;line-height:1;height:24px;min-height:24px;padding:2px 6px}
+  html[data-layout-theme] .collection-tools>div {align-items:center}
+  html[data-layout-theme] .collection-tools button {width:24px;min-width:24px;flex-shrink:0}
+  html[data-layout-theme] .collection-tools button svg {display:block;flex-shrink:0}
+  html[data-layout-theme] #root .private-collection .collection-sort select {font-size:8.67px;line-height:1.2;padding:2px 6px 2px 0;min-height:22px;width:96px;min-width:96px;max-width:96px;flex-basis:96px}
+  html[data-layout-theme] #root .import-workspace select[aria-label="Resume batch"] {font-size:8.67px;line-height:1.2;padding:2px 6px;min-height:22px;width:auto;min-width:0;max-width:100%;align-self:flex-start;border-radius:6px}
+  html[data-layout-theme] #root input[type=file] {font-size:8.67px;line-height:1.2;padding:4px 6px;min-height:26px}
+  html[data-layout-theme] #root input[type=file]::file-selector-button {font:inherit;line-height:1.2;padding:2px 6px;margin-right:20px;border:1px solid var(--border);border-radius:5px;background:var(--chip);color:var(--text)}
+}

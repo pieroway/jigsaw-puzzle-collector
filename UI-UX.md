@@ -54,8 +54,14 @@ Default **Relaxed 550 ms** shared-element-like gallery → details transition; r
 
 ## Accessibility
 
+Mobile and touch-device text inputs, textareas and selects use at least 16px text to reduce iOS focus zoom. Keep manual pinch zoom available: the experimental viewport cap and gesture blocking did not resolve physical-device focus zoom and trapped the enlarged view, so both were removed. Do not claim focus zoom is fixed without physical iPhone verification. Desktop sizing remains unchanged.
+
 Focus-visible rings, keyboard activation, semantic buttons, descriptive labels, contrast-aware colours, text scaling and reduced-motion. Verify WCAG 2.2 AA with automated and manual audits before release.
 
 ## Design tokens
+
+Preferences includes an opt-in **Compact (test)** layout theme beside Standard. Standard now uses the complete previous Compact mobile baseline, stored in `frontend/src/standard-theme.css`. Compact applies a further 20% reduction to that baseline's typography, spacing, dimensions, icons, borders and corner radii; artwork regions become proportionally shorter rather than taller. Editable text and dropdowns remain 16px in both layouts. These changes apply only at mobile/tablet widths (up to 900px), without CSS zoom or transforms. Layout works independently with Light/Dark/System appearance and preserves motion settings and safe areas. The preference persists locally. Evaluate on iPhone with Safari Page Zoom at 100%; Standard remains the default and desktop layout is unchanged.
+
+Standard buttons and filter pills use a 30px minimum height with 4px vertical padding; icon controls are 32px. Compact reduces these to 24px, 3.2px and 25.6px respectively. Input padding is 4px/6px in Standard and 3.2px/4.8px in Compact, with 16px text. Header/navigation sizing retains safe-area padding.
 
 See `docs/design/DESIGN-TOKENS.md` and `frontend/src/styles.css` for implementation. Light/dark mode: System default with manual override stored locally. Animation speed can be changed in the prototype; product default is 550 ms.

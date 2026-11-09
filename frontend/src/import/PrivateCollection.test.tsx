@@ -70,6 +70,41 @@ it('sorts real cards and switches between gallery and list without changing phot
   await user.click(screen.getByRole('button',{name:'Import more photos'}));expect(add).toHaveBeenCalledOnce();
 });
 
+it('reverses each sort order while keeping unknown piece counts last',async()=>{
+  const user=userEvent.setup();render(<PrivateCollection onAdd={vi.fn()}/>);await screen.findByText('Night Garden');
+  const ids=()=>screen.getAllByTestId('private-copy').map(card=>card.getAttribute('data-copy-id'));
+  const reverse=screen.getByRole('button',{name:'Reverse sort order'});
+  expect(ids()).toEqual(['3','2','1']);await user.click(reverse);expect(ids()).toEqual(['1','2','3']);expect(reverse.getAttribute('aria-pressed')).toBe('true');
+  await user.selectOptions(screen.getByLabelText('Sort collection'),'title');expect(ids()).toEqual(['3','1','2']);
+  await user.click(reverse);expect(ids()).toEqual(['2','1','3']);
+  await user.selectOptions(screen.getByLabelText('Sort collection'),'pieces');expect(ids()).toEqual(['1','2','3']);
+  expect(screen.getByRole('option',{name:'Pieces: low - high'})).toHaveProperty('selected',true);
+  await user.click(reverse);expect(ids()).toEqual(['2','1','3']);
+  expect(screen.getByRole('option',{name:'Pieces: high - low'})).toHaveProperty('selected',true);
+  await user.click(reverse);expect(ids()).toEqual(['1','2','3']);
+  expect(screen.getByRole('option',{name:'Pieces: low - high'})).toHaveProperty('selected',true);
+  await user.click(reverse);
+  await user.click(screen.getByRole('button',{name:/Alpine Village/}));await user.keyboard('{Escape}');expect(ids()).toEqual(['2','1','3']);expect(screen.getByRole('button',{name:'Reverse sort order'}).getAttribute('aria-pressed')).toBe('true');
+});
+
+it('sorts by added timestamp before ID, reverses ties, and displays the recorded date',async()=>{
+  vi.mocked(api).mockResolvedValue({copies:[
+    {...copies[0],created_at:'2026-11-08 12:00:00'},
+    {...copies[1],created_at:'2026-11-01 12:00:00'},
+    {...copies[2],created_at:'2026-11-01 12:00:00'},
+    {...copies[0],id:99,title:'Unknown date',created_at:null},
+  ]});
+  const user=userEvent.setup();render(<PrivateCollection onAdd={vi.fn()}/>);await screen.findByText('Night Garden');
+  const ids=()=>screen.getAllByTestId('private-copy').map(card=>card.getAttribute('data-copy-id'));
+  expect(ids()).toEqual(['1','3','2','99']);await user.click(screen.getByRole('button',{name:'Reverse sort order'}));expect(ids()).toEqual(['2','3','1','99']);
+  await user.click(screen.getByRole('button',{name:/Garden Birds/}));
+  const date=screen.getByText('Added to collection').nextElementSibling!.querySelector('time')!;
+  expect(date.getAttribute('datetime')).toBe('2026-11-08T12:00:00.000Z');
+  expect(date.textContent).toBe(new Date('2026-11-08T12:00:00Z').toLocaleDateString(undefined,{year:'numeric',month:'long',day:'numeric'}));
+  await user.keyboard('{Escape}');await user.click(screen.getByRole('button',{name:/Unknown date/}));
+  expect(screen.getByText('Added to collection').nextElementSibling!.textContent).toBe('Unknown');
+});
+
 it('preserves search, pills, list mode, focus and scroll when returning from details',async()=>{
   const user=userEvent.setup();const {container}=render(<div className="scroll-area"><PrivateCollection onAdd={vi.fn()}/></div>);
   await screen.findByText('Night Garden');
