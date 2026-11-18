@@ -40,7 +40,7 @@ final class ImportService {
                 $name=(string)($file['name'] ?? 'photo');
                 try {
                     if (($file['error'] ?? UPLOAD_ERR_NO_FILE)!==UPLOAD_ERR_OK) throw new \InvalidArgumentException('Upload interrupted or too large. Select the file again to retry (12 MB maximum).');
-                    $meta=$this->store->inspect($file['tmp_name'],$name);
+                    $meta=$this->store->inspect($file['tmp_name'],$name,false);
                 } catch (\InvalidArgumentException $e) {
                     if ($existing && $existing['state']!=='failed') throw new HttpError(409,'This retry key already has a saved photo');
                     if (!$existing) {

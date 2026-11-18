@@ -22,7 +22,7 @@ Low OCR text confidence is informational. Orientation review is reserved for wea
 
 The existing optional worker adds authenticated `/studio`, accepting image bytes rather than file paths. PHP stores settings/status/errors/dimensions and private asset keys in existing preprocessing JSON, without a reset migration. `POST /api/import-items/{id}/preprocessing/studio` validates owner and revision. Geometry changes regenerate studio assets; background/enable-only changes reuse transparent artwork. New files and quota accounting roll back on failure; old files are removed after commit. Original checksums and corrected pixels remain unchanged. Gallery GETs never render.
 
-PHP/GD-only hosting remains supported: without `IMAGE_PROCESSOR_URL`, correction/manual rotation work and the collection uses corrected fronts with an explicit studio-unavailable message. Rendering outages retain previous assets; initial studio failure leaves flat image review available. Owner-authorized routes protect every variant. Existing layout, themes, keyboard behavior, Relaxed 550 ms motion and system-aware Reduce Motion are preserved.
+PHP/GD-only hosting remains supported: without `IMAGE_PROCESSOR_URL`, correction/manual rotation work and the collection uses corrected fronts with an explicit studio-unavailable message. Rendering outages retain previous assets; initial studio failure leaves flat image review available. Owner-authorized routes protect every variant. Existing layout, themes, keyboard behavior, Relaxed 1000 ms motion and system-aware Reduce Motion are preserved.
 
 ## Visual proofs
 

@@ -14,6 +14,7 @@ export function CopyEditor({copy,onSaved,onCancel,onMissing,backLabel='Collectio
   const [base,setBase]=useState(copy);const [draft,setDraft]=useState(()=>toDraft(copy));const [busy,setBusy]=useState(false);
   const [errors,setErrors]=useState<Record<string,string>>({});const [error,setError]=useState('');const [conflict,setConflict]=useState(false);
   const [missing,setMissing]=useState(false);
+  const editor=useRef<HTMLFormElement>(null);
   const saving=useRef(false);const alive=useRef(true);
   const baseline=toDraft(base);const changed=keys.filter(key=>draft[key].trim()!==baseline[key].trim());const dirty=changed.length>0;
   useEffect(()=>{alive.current=true;return()=>{alive.current=false;};},[]);
@@ -23,6 +24,15 @@ export function CopyEditor({copy,onSaved,onCancel,onMissing,backLabel='Collectio
     window.addEventListener('jigsaw:before-navigate',beforeNavigate);window.addEventListener('beforeunload',beforeUnload);
     return()=>{window.removeEventListener('jigsaw:before-navigate',beforeNavigate);window.removeEventListener('beforeunload',beforeUnload);};
   },[dirty]);
+  useEffect(()=>{
+    const outside=(event:MouseEvent)=>{
+      if(!(event.target instanceof Node)||editor.current?.contains(event.target)||(!dirty&&!saving.current))return;
+      event.preventDefault();event.stopImmediatePropagation();
+      if(!saving.current&&window.confirm('Discard your unsaved changes? Choose Cancel to keep editing.'))onCancel(base);
+    };
+    document.addEventListener('click',outside,true);
+    return()=>document.removeEventListener('click',outside,true);
+  },[dirty,base,onCancel]);
   function change(key:Field,value:string){setDraft(old=>({...old,[key]:value}));setErrors(old=>{const next={...old};delete next[key];return next;});}
   async function save(event:FormEvent) {
     event.preventDefault();if(saving.current||!dirty||conflict||missing)return;
@@ -52,7 +62,7 @@ export function CopyEditor({copy,onSaved,onCancel,onMissing,backLabel='Collectio
     const options=choices[key];const legacy=baseline[key]&&options&&!options.some(([value])=>value===baseline[key]);
     return <label key={key} htmlFor={attributes.id}>{labels[key]}{options?<select {...attributes} value={draft[key]} onChange={event=>change(key,event.target.value)}><option value="">Unknown</option>{legacy&&<option value={baseline[key]}>{baseline[key]} (saved value)</option>}{options.map(([value,label])=><option value={value} key={value}>{label}</option>)}</select>:key==='notes'?<textarea {...attributes} rows={5} maxLength={5000} value={draft[key]} onChange={event=>change(key,event.target.value)}/>:<input {...attributes} autoFocus={key==='title'} type={key==='piece_count'||key==='release_year'?'number':'text'} step="1" min={key==='piece_count'?1:key==='release_year'?1800:undefined} max={key==='piece_count'?100000:key==='release_year'?2100:undefined} value={draft[key]} onChange={event=>change(key,event.target.value)}/>}{errors[key]&&<span className="copy-field-error" id={`copy-error-${key}`}>{errors[key]}</span>}</label>;
   }
-  return <form className="copy-editor" aria-label="Edit your copy" noValidate onSubmit={event=>void save(event)}>
+  return <form ref={editor} className="copy-editor" aria-label="Edit your copy" noValidate onSubmit={event=>void save(event)}>
     <h2>Edit your copy</h2><p>Corrections apply only to this physical copy. Your original import and photographs are preserved.</p>
     {error&&<p role="alert" className="import-error">{error} {conflict&&'Your changes are still here; load the latest saved values to continue.'}</p>}
     <fieldset disabled={busy}><legend>Puzzle information</legend><div className="copy-edit-grid">{(['title','manufacturer','piece_count','sku','release_year'] as Field[]).map(input)}</div></fieldset>

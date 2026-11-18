@@ -62,7 +62,7 @@ it('sorts real cards and switches between gallery and list without changing phot
   await user.click(screen.getByRole('button',{name:'List view'}));
   expect(screen.getByRole('button',{name:'List view'}).getAttribute('aria-pressed')).toBe('true');
   expect(screen.getAllByTestId('private-copy')[0].closest('.list-view')).not.toBeNull();
-  expect(within(screen.getAllByTestId('private-copy')[0]).getByRole('img').getAttribute('src')).toBe('/photos/2.webp');
+  expect(within(screen.getAllByTestId('private-copy')[0]).getByRole('img').getAttribute('src')).toBe('/photos/2.webp?display=960');
   await user.selectOptions(screen.getByLabelText('Sort collection'),'pieces');
   expect(screen.getAllByTestId('private-copy').map(card=>card.getAttribute('data-copy-id'))).toEqual(['1','2','3']);
   await user.click(screen.getByRole('button',{name:'Gallery view'}));expect(screen.getByRole('button',{name:'Gallery view'}).getAttribute('aria-pressed')).toBe('true');
@@ -112,10 +112,23 @@ it('preserves search, pills, list mode, focus and scroll when returning from det
   const scroller=container.querySelector<HTMLElement>('.scroll-area')!;scroller.scrollTop=420;
   await user.click(screen.getByTestId('private-copy'));
   expect(screen.getByRole('heading',{name:'Night Garden'})).toBeTruthy();
-  expect(screen.getByRole('img').getAttribute('src')).toBe('/studio/3.webp');expect(scroller.scrollTop).toBe(0);
+  expect(screen.getByRole('img').getAttribute('src')).toBe('/studio/3.webp?display=960');expect(scroller.scrollTop).toBe(0);
   await user.keyboard('{Escape}');
   expect((screen.getByLabelText('Search your collection') as HTMLInputElement).value).toBe('Night');
   expect(screen.getByRole('button',{name:'Ravensburger'}).getAttribute('aria-pressed')).toBe('true');
   expect(screen.getByRole('button',{name:'List view'}).getAttribute('aria-pressed')).toBe('true');
   expect(document.activeElement).toBe(screen.getByTestId('private-copy'));expect(scroller.scrollTop).toBe(420);
+});
+
+vi.mock('./BoxPhotos',()=>({BoxPhotos:({children}:{children:import('react').ReactNode})=><>{children}</>}));
+
+it('keeps loading and failure feedback below the banner and retries without showing an empty collection',async()=>{
+  vi.mocked(api).mockRejectedValueOnce(new Error('Connection interrupted.'));
+  render(<PrivateCollection onAdd={vi.fn()}/>);const header=screen.getByRole('banner');
+  expect(screen.getByRole('status',{name:'Loading collection'}).compareDocumentPosition(header)&Node.DOCUMENT_POSITION_PRECEDING).toBeTruthy();
+  await screen.findByRole('alert',{name:'Collection loading failed'});expect(screen.queryByText(/Your shelves are ready/)).toBeNull();expect(screen.getByRole('banner')).toBe(header);
+  const user=userEvent.setup();await user.click(screen.getByRole('button',{name:'Retry'}));await screen.findByRole('button',{name:/Garden Birds/});expect(screen.getByRole('banner')).toBe(header);expect(screen.queryByRole('alert')).toBeNull();
+});
+it('aborts the collection read when the page unmounts',()=>{
+  vi.mocked(api).mockReturnValue(new Promise(()=>{}));const view=render(<PrivateCollection onAdd={vi.fn()}/>);const options=vi.mocked(api).mock.calls[0][3];view.unmount();expect(options?.signal?.aborted).toBe(true);
 });

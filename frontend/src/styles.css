@@ -75,3 +75,17 @@ html[data-reduced-motion=true] .puzzle-card:hover { transform: none; }
     .app-shell {--header-blur-clearance:20px}
   }
 }
+/* A shared highlight moves between Profile options without moving their labels. */
+.settings-page .segmented { position:relative; isolation:isolate; --selected-option:0; --option-count:3; --segment-pad:5px; --segment-gap:4px; }
+.settings-page .segmented::before { content:""; position:absolute; z-index:0; top:var(--segment-pad); bottom:var(--segment-pad); left:var(--segment-pad); width:calc((100% - 2 * var(--segment-pad) - (var(--option-count) - 1) * var(--segment-gap)) / var(--option-count)); border-radius:inherit; background:var(--surface); box-shadow:0 2px 8px #0001; transform:translateX(calc(var(--selected-option) * (100% + var(--segment-gap)))); transition:transform 360ms cubic-bezier(.22,.61,.36,1)!important; pointer-events:none; }
+.settings-page .segmented:has(button:nth-child(2):last-child) { --option-count:2; }
+.settings-page .segmented:has(button:nth-child(2).active) { --selected-option:1; }
+.settings-page .segmented:has(button:nth-child(3).active) { --selected-option:2; }
+.settings-page .segmented button { position:relative; z-index:1; flex:1 1 0; min-width:0; }
+.settings-page .segmented button.active { background:transparent; box-shadow:none; }
+.settings-page .segmented:has(button:nth-child(4):last-child) { --option-count:4; }
+.settings-page .segmented:has(button:nth-child(4).active) { --selected-option:3; }
+
+@media(max-width:900px) { html[data-layout-theme] .settings-page .segmented { --segment-pad:2px; --segment-gap:3px; } html[data-layout-theme=compact] .settings-page .segmented { --segment-pad:1.6px; --segment-gap:2.4px; } }
+/* Keep Profile settings rectangular with restrained corners. */
+.settings-page .segmented,.settings-page .segmented button { border-radius:4px!important; }

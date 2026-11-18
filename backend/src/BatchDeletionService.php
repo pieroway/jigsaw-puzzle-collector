@@ -36,7 +36,7 @@ final class BatchDeletionService {
                 $this->query('SELECT id FROM users WHERE id=? FOR UPDATE',[$owner]);
                 $job=$this->query('SELECT * FROM image_deletion_queue WHERE image_id=? AND user_id=? FOR UPDATE',[$id,$owner])->fetch();
                 if(!$job) {$this->db->commit();continue;}
-                $references=(int)$this->query('SELECT (SELECT COUNT(*) FROM import_items WHERE image_id=?)+(SELECT COUNT(*) FROM owned_copies WHERE image_id=?)',[$id,$id])->fetchColumn();
+                $references=(int)$this->query('SELECT (SELECT COUNT(*) FROM import_items WHERE image_id=?)+(SELECT COUNT(*) FROM owned_copies WHERE image_id=?)+(SELECT COUNT(*) FROM copy_photos WHERE image_id=?)',[$id,$id,$id])->fetchColumn();
                 if(!$references) foreach(json_decode($job['asset_keys'],true,32,JSON_THROW_ON_ERROR) as $key) $this->store->removeVariants($key);
                 $this->query('DELETE FROM image_deletion_queue WHERE image_id=?',[$id]);
                 if(!$references) $this->query('DELETE FROM private_images WHERE id=? AND user_id=?',[$id,$owner]);

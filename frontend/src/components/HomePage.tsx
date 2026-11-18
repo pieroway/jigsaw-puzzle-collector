@@ -1,3 +1,5 @@
+import {CollectionCover} from './CollectionCover';
+import {useCoverSettings,resolveCover} from '../import/coverPreference';
 import {useEffect,useLayoutEffect,useRef,useState} from 'react';
 import {ArrowRight,BookOpen,Plus} from 'lucide-react';
 import {api} from '../import/api';
@@ -12,6 +14,7 @@ function batchDescription(batch:BatchSummary) {
   return [[batch.image_review,'photo','to prepare'],[batch.needs_review,'puzzle','to review'],[batch.failed,'photo','to retry'],[batch.approved,'puzzle','ready to import'],[batch.queued+batch.processing,'photo','awaiting processing']].filter(([count])=>Number(count)>0).map(([count,noun,action])=>`${count} ${noun}${Number(count)===1?'':'s'} ${action}`).join(' · ');
 }
 export function HomePage({signedIn,sessionReady,onCollection,onAdd,onResume}:Props) {
+  const coverSettings=useCoverSettings();
   const [data,setData]=useState<Summary|null>(null);const [error,setError]=useState('');const [attempt,setAttempt]=useState(0);
   const [selected,setSelected]=useState<Copy|null>(null);const root=useRef<HTMLDivElement>(null);
   const scroll=useRef(0);const returnCopy=useRef<number|null>(null);
@@ -53,7 +56,7 @@ export function HomePage({signedIn,sessionReady,onCollection,onAdd,onResume}:Pro
       {signedIn&&data&&<>
         {data.batches.length>0&&<section className="home-section" aria-labelledby="home-imports"><div className="section-title"><h2 id="home-imports">Continue your import</h2><span>A few pieces left to place</span></div><div className="home-batches">{data.batches.map(batch=><button className="home-batch" key={batch.id} aria-label={`Continue batch ${batch.id}`} onClick={()=>onResume(batch.id)}><span><strong>Batch {batch.id}</strong><small>{batch.remaining} {batch.remaining===1?'photo needs':'photos need'} attention</small><span>{batchDescription(batch)}</span></span><ArrowRight size={20} aria-hidden="true"/></button>)}</div></section>}
         <section className="home-section" aria-labelledby="home-recent"><div className="section-title"><h2 id="home-recent">Recently added</h2>{data.recent.length>0&&<button className="collection-add-link" onClick={onCollection}>See all <ArrowRight size={14}/></button>}</div>
-          {!data.recent.length?<div className="home-empty"><strong>Your first puzzle belongs here.</strong><p>Start with a few box photos. We’ll keep the originals safe while you prepare and review each puzzle.</p></div>:<div className="puzzle-grid private-grid home-recent">{data.recent.map(copy=><button className="puzzle-card" key={copy.id} data-home-copy-id={copy.id} onClick={()=>open(copy)}><div className={`collection-art ${copy.uses_studio?'studio-surface':''}`} data-background={copy.studio_background}>{copy.image_url?<img src={copy.image_url} alt={`Box photo of ${copy.title}`} loading="lazy" decoding="async"/>:<span>No box photo</span>}</div><div className="puzzle-copy"><strong>{copy.title}</strong><span>{copy.manufacturer?.trim()||'Unknown manufacturer'}</span><small>{copy.piece_count?Number(copy.piece_count).toLocaleString():'Unknown'} pieces</small></div></button>)}</div>}
+          {!data.recent.length?<div className="home-empty"><strong>Your first puzzle belongs here.</strong><p>Start with a few box photos. We’ll keep the originals safe while you prepare and review each puzzle.</p></div>:<div className="puzzle-grid private-grid home-recent">{data.recent.map(copy=>{const cover=resolveCover(copy,coverSettings);return <button className="puzzle-card" key={copy.id} data-home-copy-id={copy.id} onClick={()=>open(copy)}><CollectionCover url={cover.url} title={copy.title} studio={cover.studio} background={copy.studio_background}/><div className="puzzle-copy"><strong>{copy.title}</strong><span>{copy.manufacturer?.trim()||'Unknown manufacturer'}</span><small>{copy.piece_count?Number(copy.piece_count).toLocaleString():'Unknown'} pieces</small></div></button>;})}</div>}
         </section>
       </>}
     </>}

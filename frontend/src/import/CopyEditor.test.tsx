@@ -63,3 +63,12 @@ it('blocks leaving and repeated submissions during a save and warns before closi
   expect(screen.getByRole('button',{name:'Saving…'}).hasAttribute('disabled')).toBe(true);expect(screen.getByRole('button',{name:'Cancel'}).hasAttribute('disabled')).toBe(true);
   expect(api).toHaveBeenCalledTimes(1);await act(async()=>finish({copy:{...copy,notes:'Private draft',edit_revision:2}}));
 });
+
+it('warns on outside clicks and keeps edits unless discard is confirmed',async()=>{
+  const onCancel=vi.fn(),outside=vi.fn();const user=userEvent.setup();
+  render(<><button onClick={outside}>Outside action</button><CopyEditor copy={copy} onSaved={vi.fn()} onCancel={onCancel}/></>);
+  await user.click(screen.getByRole('button',{name:'Outside action'}));expect(window.confirm).not.toHaveBeenCalled();expect(outside).toHaveBeenCalledOnce();outside.mockClear();
+  await user.type(screen.getByLabelText('Notes'),'Unsaved notes');await user.click(screen.getByRole('button',{name:'Outside action'}));
+  expect(window.confirm).toHaveBeenCalledOnce();expect(onCancel).not.toHaveBeenCalled();expect(outside).not.toHaveBeenCalled();expect((screen.getByLabelText('Notes') as HTMLTextAreaElement).value).toBe('Unsaved notes');
+  vi.mocked(window.confirm).mockReturnValue(true);await user.click(screen.getByRole('button',{name:'Outside action'}));expect(onCancel).toHaveBeenCalledWith(copy);expect(outside).not.toHaveBeenCalled();
+});

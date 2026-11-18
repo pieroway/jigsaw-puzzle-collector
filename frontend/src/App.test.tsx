@@ -117,3 +117,9 @@ it('keeps Add disabled after login failure and allows canceling the account scre
   await user.click(within(form).getByRole('button',{name:'Cancel'}));
   expect(screen.queryByRole('form',{name:'Account login'})).toBeNull();
 });
+
+it('shows session failures below the collection banner and allows retry',async()=>{
+  vi.mocked(session).mockRejectedValueOnce(new Error('Session check timed out.'));
+  render(<App/>);await screen.findByRole('alert',{name:'Collection loading failed'});expect(screen.getByRole('banner')).toBeTruthy();expect(screen.queryByText('Illustrative sample data')).toBeNull();
+  const user=userEvent.setup();await user.click(screen.getByRole('button',{name:'Retry'}));await screen.findByText('My private puzzles');expect(screen.queryByRole('alert')).toBeNull();
+});

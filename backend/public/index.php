@@ -44,6 +44,8 @@ try {
     }
     if (!$user) throw new HttpError(401,'Sign in to your private collection first.'); $owner=$user['id'];
     if ($path==='/api/auth/logout'&&$method==='POST') { $_SESSION=[]; session_regenerate_id(true); $_SESSION['csrf']=bin2hex(random_bytes(32)); respond(sessionResult(null)); }
+    // Authentication and CSRF are settled; image reads and uploads must not hold the session lock.
+    session_write_close();
     $service=new ImportService($db,new ImageStore(getenv('PRIVATE_STORAGE_PATH') ?: '/var/lib/jigsaw/photos'),new FixtureExtractor(getenv('FIXTURE_PATH') ?: '/fixtures'));
     $deletion=new Jigsaw\BatchDeletionService($db,new ImageStore(getenv('PRIVATE_STORAGE_PATH') ?: '/var/lib/jigsaw/photos'));
     if($path==='/api/import-batches/cleanup'&&$method==='POST') respond(['cleanup_pending'=>$deletion->cleanup($owner)]);
@@ -53,6 +55,21 @@ try {
         if($method==='GET')respond(['copy'=>$copies->read($copyId,$owner)]);
         if($method==='PATCH')respond(['copy'=>$copies->update($copyId,$owner,input())]);
         if($method==='DELETE')respond([...(new Jigsaw\CopyDeletionService($db))->delete($copyId,$owner,input()),'cleanup_pending'=>$deletion->cleanup($owner)]);
+    }
+    if(preg_match('#^/api/collection-copies/([1-9][0-9]*)/photos(?:/(original|[1-9][0-9]*)(/image)?)?$#',$path,$m)) {
+        $photos=new Jigsaw\CopyPhotoService($db,new ImageStore(getenv('PRIVATE_STORAGE_PATH') ?: '/var/lib/jigsaw/photos'));$id=(int)$m[1];$photo=$m[2]??null;
+        if($method==='GET'&&!$photo)respond(['photos'=>$photos->listing($id,$owner)]);
+        if($method==='GET'&&isset($m[3])) {
+            $file=$photos->image($id,$owner,$photo);if(!is_file($file))throw new HttpError(404,'Photo unavailable');
+            Jigsaw\ImageDelivery::send(['path'=>$file,'mime'=>'image/jpeg'],$owner,Jigsaw\ImageDelivery::size($_GET['display']??null));
+        }
+        if($method==='POST'&&!$photo) {
+            if((int)($_SERVER['CONTENT_LENGTH']??0)>14*1024*1024)throw new HttpError(413,'Choose a photo up to 12 MB.');
+            $file=$_FILES['photo']??null;
+            if(!$file||is_array($file['name'])||($file['error']===0&&!is_uploaded_file($file['tmp_name'])))throw new HttpError(422,'Choose one photo.');
+            respond(['photos'=>$photos->change($id,$owner,null,'POST',$file)],201);
+        }
+        if($photo&&!isset($m[3])&&$method==='DELETE')respond(['photos'=>$photos->change($id,$owner,$photo,$method),'cleanup_pending'=>$deletion->cleanup($owner)]);
     }
     if ($path==='/api/home'&&$method==='GET') respond([...(new Jigsaw\HomeSummary($db))->get($owner),'recent'=>$service->collection($owner,6)]);
     if ($path==='/api/import-batches') {
@@ -83,9 +100,8 @@ try {
         if ($method==='GET'&&in_array($action,['image','original','original-image','source-image','processed-image','catalogue-image','studio-image','studio-thumbnail'],true)) {
             $image=$service->image($id,$owner,$action==='original',$action);
             if (!is_file($image['path'])) throw new HttpError(404,'Photo unavailable. Contact the administrator.');
-            header('Content-Type: '.$image['mime']); header("Content-Security-Policy: default-src 'none'; sandbox");
             if ($action==='original') header('Content-Disposition: attachment; filename="original-photo"');
-            readfile($image['path']); exit;
+            Jigsaw\ImageDelivery::send($image,$owner,Jigsaw\ImageDelivery::size($_GET['display']??null));
         }
     }
     throw new HttpError(404,'Not found');

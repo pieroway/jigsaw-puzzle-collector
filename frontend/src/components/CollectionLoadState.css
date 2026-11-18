@@ -1,0 +1,9 @@
+.collection-load-state { min-height:clamp(240px,45vh,440px); display:grid; place-items:center; padding:24px; color:var(--muted); }
+.collection-spinner { width:30px; height:30px; border:2px solid var(--border); border-top-color:var(--accent); border-radius:50%; animation:collection-spin .85s linear infinite!important; }
+.collection-load-feedback { display:grid; justify-items:center; gap:12px; text-align:center; max-width:360px; }
+.collection-load-feedback strong { font-size:14px; color:var(--text); }
+.collection-load-feedback p { margin:0; font-size:12px; line-height:1.6; overflow-wrap:anywhere; }
+.collection-load-feedback .import-actions { margin:0; }
+@keyframes collection-spin { to { transform:rotate(360deg); } }
+html[data-reduced-motion=true] .collection-spinner { animation:none!important; }
+@media(prefers-reduced-motion:reduce) { html:not([data-reduced-motion=false]) .collection-spinner { animation:none!important; } }

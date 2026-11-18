@@ -36,7 +36,7 @@ it('opens shared details and restores Home scroll and card focus', async () => {
   const user = userEvent.setup(); const { container } = render(<div className="scroll-area"><HomePage signedIn sessionReady onCollection={vi.fn()} onResume={vi.fn()} onAdd={vi.fn()} /></div>);
   const card = await screen.findByRole('button', { name: /Garden Birds/ }); const scroller = container.firstElementChild!; scroller.scrollTop = 180;
   await user.click(card); expect(screen.getByRole('heading', { name: 'Garden Birds' })).toBeTruthy();
-  expect(screen.getByAltText('Original photograph of Garden Birds').getAttribute('src')).toBe('/original/9');
+  expect(screen.getByAltText('Original photograph of Garden Birds').getAttribute('src')).toBe('/original/9?display=960');
   await user.click(screen.getByRole('button', { name: /Home/ })); expect(scroller.scrollTop).toBe(180); expect(document.activeElement).toBe(screen.getByRole('button', { name: /Garden Birds/ }));
 });
 it('offers retry after failure and a real empty welcome after recovery', async () => {
@@ -51,3 +51,5 @@ it('discards private data when authentication changes', async () => {
   await screen.findByRole('button', { name: /Garden Birds/ }); rerender(<HomePage {...props} signedIn={false} />);
   expect(screen.queryByText('Garden Birds')).toBeNull();
 });
+
+vi.mock('../import/BoxPhotos',()=>({BoxPhotos:({children}:{children:import('react').ReactNode})=><>{children}</>}));

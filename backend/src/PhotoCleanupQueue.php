@@ -15,7 +15,7 @@ final class PhotoCleanupQueue {
         if(!$photo)return;
         $keys=self::mergeKeys(json_decode($photo['cleanup_keys']??'[]',true,32,JSON_THROW_ON_ERROR),[$photo['storage_key'],...$keys]);
         $q=$this->db->prepare('UPDATE private_images SET cleanup_keys=? WHERE id=? AND user_id=?');$q->execute([json_encode($keys,JSON_THROW_ON_ERROR),$image,$owner]);
-        $q=$this->db->prepare('SELECT (SELECT COUNT(*) FROM import_items WHERE image_id=?)+(SELECT COUNT(*) FROM owned_copies WHERE image_id=?)');$q->execute([$image,$image]);
+        $q=$this->db->prepare('SELECT (SELECT COUNT(*) FROM import_items WHERE image_id=?)+(SELECT COUNT(*) FROM owned_copies WHERE image_id=?)+(SELECT COUNT(*) FROM copy_photos WHERE image_id=?)');$q->execute([$image,$image,$image]);
         if(!(int)$q->fetchColumn()) {
             $q=$this->db->prepare('INSERT INTO image_deletion_queue(image_id,user_id,asset_keys) VALUES (?,?,?) ON DUPLICATE KEY UPDATE asset_keys=VALUES(asset_keys)');$q->execute([$image,$owner,json_encode($keys,JSON_THROW_ON_ERROR)]);
         }

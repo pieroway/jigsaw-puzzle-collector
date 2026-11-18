@@ -60,7 +60,7 @@ test('Relaxed animation returns to the original card and preserves search', asyn
   const card = page.locator('.puzzle-card').first();
   await card.focus();
   await page.keyboard.press('Enter');
-  await expect(page.locator('.flight')).toHaveCSS('--flight-duration', '550ms');
+  await expect(page.locator('.flight')).toHaveCSS('--flight-duration', '1000ms');
   await expect(page.locator('.flight')).toHaveCount(0);
   await page.keyboard.press('Escape');
   await expect(page.locator('.flight')).toHaveCSS('--flight-duration', '429ms');

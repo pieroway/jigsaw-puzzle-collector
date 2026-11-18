@@ -3,7 +3,7 @@ declare(strict_types=1);
 namespace Jigsaw;
 final class ImageStore {
     public function __construct(public readonly string $root, private int $maxBytes = 12582912, private int $maxPixels = 25000000) {}
-    public function inspect(string $path, string $name): array {
+    public function inspect(string $path, string $name, bool $decode = true): array {
         if (str_contains($name, '/') || str_contains($name, '\\') || str_contains($name, "\0") || !preg_match('/\.(jpg|jpeg|png|webp)$/i', $name) || strlen($name)>255) throw new \InvalidArgumentException('Choose a JPEG, PNG or WebP image with a safe filename. Convert HEIC to JPEG first.');
         $bytes = filesize($path);
         if (!$bytes || $bytes > $this->maxBytes) throw new \InvalidArgumentException('Each image must be smaller than 12 MB. Resize and retry.');
@@ -12,9 +12,12 @@ final class ImageStore {
         if (!$size || !in_array($mime, ['image/jpeg','image/png','image/webp'], true) || $size['mime'] !== $mime) throw new \InvalidArgumentException('This file is not a supported image. Choose JPEG, PNG or WebP.');
         if (min($size[0],$size[1])<16) throw new \InvalidArgumentException('The uploaded image must be at least 16 pixels per side.');
         if (max($size[0],$size[1])>12000 || $size[0]*$size[1]>$this->maxPixels) throw new \InvalidArgumentException(sprintf('The uploaded image is %d × %d pixels (%.2f megapixels). The limit is %.0f megapixels and 12,000 pixels per side. Export a smaller copy and retry.', $size[0], $size[1], $size[0]*$size[1]/1000000, $this->maxPixels/1000000));
-        $image = @imagecreatefromstring(file_get_contents($path));
-        if (!$image) throw new \InvalidArgumentException('The image is damaged or cannot be decoded. Export it again and retry.');
-        imagedestroy($image);
+        // Upload callers decode once in save(); standalone inspection still validates decoding.
+        if ($decode) {
+            $image = @imagecreatefromstring(file_get_contents($path));
+            if (!$image) throw new \InvalidArgumentException('The image is damaged or cannot be decoded. Export it again and retry.');
+            imagedestroy($image);
+        }
         return ['sha256'=>hash_file('sha256',$path), 'mime'=>$mime, 'bytes'=>$bytes, 'width'=>$size[0], 'height'=>$size[1]];
     }
     public function save(string $path, string $key): void {

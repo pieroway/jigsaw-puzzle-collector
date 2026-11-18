@@ -37,7 +37,8 @@ final class CopyDeletionTest extends TestCase {
         foreach([false,true] as $fail) {
             $db=$this->createMock(PDO::class);$db->expects(self::once())->method('beginTransaction');$db->method('inTransaction')->willReturn(true);
             $owner=$this->createMock(PDOStatement::class);$copy=$this->createMock(PDOStatement::class);$history=$this->createMock(PDOStatement::class);$remove=$this->createMock(PDOStatement::class);$marker=$this->createMock(PDOStatement::class);
-            $db->expects(self::exactly(5))->method('prepare')->willReturnOnConsecutiveCalls($owner,$copy,$history,$remove,$marker);
+            $extras=$this->createMock(PDOStatement::class);$extras->method('fetchAll')->willReturn([]);$dropExtras=$this->createMock(PDOStatement::class);
+            $db->expects(self::exactly(7))->method('prepare')->willReturnOnConsecutiveCalls($owner,$copy,$extras,$dropExtras,$history,$remove,$marker);
             $copy->method('fetch')->willReturn(['edit_revision'=>1,'import_item_id'=>null,'image_id'=>null]);
             $history->expects(self::once())->method('execute')->with([12,7]);$remove->expects(self::once())->method('execute')->with([12,7,1]);$remove->method('rowCount')->willReturn(1);
             if($fail){$marker->method('execute')->willThrowException(new PDOException('Marker write failed'));$db->expects(self::once())->method('rollBack');$db->expects(self::never())->method('commit');}

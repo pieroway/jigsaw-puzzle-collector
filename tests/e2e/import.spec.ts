@@ -44,17 +44,20 @@ test('ten photos: edit, review, resume, import privately and retry safely', asyn
   await expect(page.locator('.import-detail')).toHaveCSS('animation-duration','0.12s');
   await expect(page.getByRole('button',{name:'Studio',exact:true})).toHaveAttribute('aria-pressed','true');
   await page.getByRole('button',{name:'Corrected Front',exact:true}).click();
-  await expect(page.locator('.import-detail>img')).toHaveAttribute('src',/processed-image/);
+  await expect(page.locator('.box-photo-slide img')).toHaveAttribute('src',/processed-image/);
   await page.getByRole('button',{name:'Original',exact:true}).click();
-  await expect(page.locator('.import-detail>img')).toHaveAttribute('src',/original-image/);
+  await expect(page.locator('.box-photo-slide img')).toHaveAttribute('src',/original-image/);
   await page.getByRole('button',{name:'Studio',exact:true}).click();
-  await expect(page.locator('.import-detail>img')).toHaveAttribute('src',/studio-image/);
+  await expect(page.locator('.box-photo-slide img')).toHaveAttribute('src',/studio-image/);
   await page.keyboard.press('Escape');
   await expect(page.getByTestId('private-copy').first()).toBeFocused();
   // Existing copies can be corrected without changing their source photograph.
   await page.getByTestId('private-copy').first().click();
-  const originalUrl=await page.getByRole('link',{name:'Download untouched original'}).getAttribute('href');
-  const originalBytes=await(await page.request.get(originalUrl!)).body();
+  await expect(page.getByRole('link',{name:'Download untouched original'})).toHaveCount(0);
+  const originalUrl=await page.locator('.box-photo-slide img').getAttribute('src');
+  if(!originalUrl)throw new Error('Original photo URL is missing');
+  const sourceUrl=originalUrl.replace(/\/(?:studio-image|processed-image|image)(?:\?.*)?$/,'/original-image');
+  const originalBytes=await(await page.request.get(sourceUrl)).body();
   await page.getByRole('button',{name:'Edit',exact:true}).click();
   await page.getByLabel('Title',{exact:true}).fill('Edited after import');
   await page.getByLabel('Manufacturer',{exact:true}).fill('My private maker');
@@ -67,7 +70,7 @@ test('ten photos: edit, review, resume, import privately and retry safely', asyn
   await expect(page.getByText('Changes saved.',{exact:true})).toBeVisible();
   await expect(page.getByRole('heading',{name:'Edited after import',exact:true})).toBeVisible();
   await expect(page.getByText('<b>Private note</b>',{exact:true})).toBeVisible();
-  expect(await(await page.request.get(originalUrl!)).body()).toEqual(originalBytes);
+  expect(await(await page.request.get(sourceUrl)).body()).toEqual(originalBytes);
   await page.reload();await page.getByRole('button',{name:/Edited after import/}).click();
   await expect(page.getByText('Shelf 7',{exact:true})).toBeVisible();
   await page.getByRole('button',{name:'Edit',exact:true}).click();
@@ -81,7 +84,7 @@ test('ten photos: edit, review, resume, import privately and retry safely', asyn
   await page.getByRole('button',{name:'Delete this copy',exact:true}).click();
   await page.getByRole('button',{name:'Delete copy permanently',exact:true}).click();
   await expect(page.getByTestId('private-copy')).toHaveCount(9);
-  expect(await(await page.request.get(originalUrl!)).body()).toEqual(originalBytes);
+  expect(await(await page.request.get(sourceUrl)).body()).toEqual(originalBytes);
   await page.reload();await expect(page.getByTestId('private-copy')).toHaveCount(9);
   await page.getByRole('button',{name:'Add',exact:true}).last().click();
   await expect(page.getByText('Removed from collection',{exact:true})).toBeVisible();

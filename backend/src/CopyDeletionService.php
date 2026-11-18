@@ -24,6 +24,9 @@ final class CopyDeletionService {
             if($copy['import_item_id']) {
                 $q=$this->db->prepare('SELECT i.*,b.deleted_at AS batch_deleted_at FROM import_items i JOIN import_batches b ON b.id=i.batch_id WHERE i.id=? AND b.user_id=? FOR UPDATE');$q->execute([$copy['import_item_id'],$owner]);$source=$q->fetch()?:null;
             }
+            $q=$this->db->prepare('SELECT image_id FROM copy_photos WHERE copy_id=?');$q->execute([$id]);$extraPhotos=$q->fetchAll(PDO::FETCH_COLUMN);
+            $q=$this->db->prepare('DELETE FROM copy_photos WHERE copy_id=?');$q->execute([$id]);
+            foreach($extraPhotos as $image)(new PhotoCleanupQueue($this->db))->remember((int)$image,$owner,[]);
             $q=$this->db->prepare('DELETE FROM owned_copy_edits WHERE copy_id=? AND user_id=?');$q->execute([$id,$owner]);
             $q=$this->db->prepare('DELETE FROM owned_copies WHERE id=? AND user_id=? AND edit_revision=?');$q->execute([$id,$owner,$revision]);
             if($q->rowCount()!==1)throw new HttpError(409,'This copy changed. Review it before deleting.');

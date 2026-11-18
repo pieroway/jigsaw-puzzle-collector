@@ -1,15 +1,20 @@
+import {CollectionCover} from '../components/CollectionCover';
+import {CollectionHeader} from '../components/CollectionHeader';
+import {CollectionLoadState} from '../components/CollectionLoadState';
+import {useCoverSettings,resolveCover} from './coverPreference';
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { api } from './api';
-import {ArrowUpDown,ChevronDown,Grid2X2,List,Plus,Search,Settings2,SlidersHorizontal,X} from 'lucide-react';
+import {ArrowUpDown,ChevronDown,Grid2X2,List,Plus,Search,SlidersHorizontal,X} from 'lucide-react';
 import {PrivateCopyDetails,type Copy} from './PrivateCopyDetails';
 import {allowNavigation} from '../navigation';
 import {CopyRemovalNotice,type CopyRemoval} from './CopyRemovalNotice';
 import {collectionDate} from './collectionDate';
 const makerKey=(value:string|null)=>value?.trim()?`brand:${value.trim().toLocaleLowerCase()}`:'unknown';
 export function PrivateCollection({ onAdd,onSettings }: { onAdd: () => void;onSettings?:()=>void }) {
+  const coverSettings=useCoverSettings();
   const [copies,setCopies] = useState<Copy[]>([]); const [selected,setSelected] = useState<Copy | null>(null);
 
-  const [query,setQuery] = useState(''); const [error,setError] = useState(''); const [loaded,setLoaded] = useState(false);
+  const [query,setQuery] = useState(''); const [error,setError] = useState(''); const [loaded,setLoaded] = useState(false);const [attempt,setAttempt]=useState(0);
   const [layout,setLayout]=useState<'gallery'|'list'>('gallery');
   const [maker,setMaker]=useState('all');const [pieces,setPieces]=useState('all');
   const [filtersOpen,setFiltersOpen]=useState(false);const [sort,setSort]=useState('newest');
@@ -43,14 +48,17 @@ export function PrivateCollection({ onAdd,onSettings }: { onAdd: () => void;onSe
     if (selected) { if (scroller) scroller.scrollTop = 0; root.current?.querySelector<HTMLButtonElement>('.back-button')?.focus(); }
     else if (returnCopy.current !== null) { if (scroller) scroller.scrollTop = scroll.current; (root.current?.querySelector<HTMLElement>(`[data-copy-id="${returnCopy.current}"]`)??root.current?.querySelector<HTMLElement>('.empty-state button')??root.current?.querySelector<HTMLElement>('.search-field input'))?.focus({ preventScroll:true }); returnCopy.current = null; }
   },[selected?.id]);
-  useEffect(() => { void api<{ copies: Copy[] }>('/collection').then(x => setCopies(x.copies)).catch(e => setError(e.message)).finally(() => setLoaded(true)); }, []);
+  useEffect(() => {
+    const controller=new AbortController();setLoaded(false);setError('');
+    void api<{copies:Copy[]}>('/collection','GET',undefined,{signal:controller.signal}).then(result=>{if(!controller.signal.aborted){if(!Array.isArray(result.copies))throw new Error('The collection response was incomplete. Please retry.');setCopies(result.copies);}}).catch(reason=>{if(!controller.signal.aborted)setError(reason instanceof Error?reason.message:'Please check your connection and retry.');}).finally(()=>{if(!controller.signal.aborted)setLoaded(true);});
+    return()=>controller.abort();
+  },[attempt]);
   useEffect(() => { const handle = (e: KeyboardEvent) => { if (e.key === 'Escape'&&allowNavigation()) setSelected(null); }; window.addEventListener('keydown',handle); return () => window.removeEventListener('keydown',handle); }, []);
   return <div className="private-collection" ref={root}>
     {removal&&!selected&&<CopyRemovalNotice key={removal.copy_id} removal={removal}/>}
-    {error && <p role="alert" className="import-error">{error}</p>}
-    {!loaded && <p role="status">Opening your collection…</p>}
     {selected ? <PrivateCopyDetails copy={selected} onBack={()=>setSelected(null)} onRemoved={removed} onUpdated={copy=>{setCopies(old=>old.map(value=>value.id===copy.id?copy:value));setSelected(copy);}}/> : <>
-      <header className="page-heading collection-heading"><div><div className="eyebrow">YOUR LITTLE CORNER OF WONDER</div><h1>My Collection<span className="title-dot">.</span></h1><p>Every puzzle has a story worth keeping.</p></div>{onSettings&&<button className="round-icon" aria-label="Collection settings" onClick={onSettings}><Settings2 size={20}/></button>}</header>
+      <CollectionHeader onSettings={onSettings}/>
+      {!loaded||error?<CollectionLoadState error={error} onRetry={()=>setAttempt(value=>value+1)}/>:<>
       <div className="stats" role="group" aria-label="Collection totals">
         <div><span className="stats-icon" aria-hidden="true">✦</span><strong>{loaded?copies.length.toLocaleString():'—'}</strong><small>Puzzles</small></div>
         <div><span className="stats-icon" aria-hidden="true">◈</span><strong>{loaded?makers.size.toLocaleString():'—'}</strong><small>Manufacturers</small></div>
@@ -64,7 +72,8 @@ export function PrivateCollection({ onAdd,onSettings }: { onAdd: () => void;onSe
       <div className="collection-tools"><span aria-live="polite">{visible.length} {visible.length===1?'puzzle':'puzzles'} <ChevronDown size={14}/></span><div><div className="collection-sort"><button type="button" aria-label="Reverse sort order" title="Reverse sort order" aria-pressed={sortReversed} onClick={()=>setSortReversed(value=>!value)}><ArrowUpDown size={17} aria-hidden="true"/></button><select aria-label="Sort collection" value={sort} onChange={event=>setSort(event.target.value)}><option value="newest">{sortReversed?'Oldest first':'Newest first'}</option><option value="title">{sortReversed?'Title Z–A':'Title A–Z'}</option><option value="pieces">{sortReversed?'Pieces: high - low':'Pieces: low - high'}</option></select></div><button aria-label="Gallery view" aria-pressed={layout==='gallery'} className={layout==='gallery'?'tool-active':''} onClick={()=>setLayout('gallery')}><Grid2X2 size={18}/></button><button aria-label="List view" aria-pressed={layout==='list'} className={layout==='list'?'tool-active':''} onClick={()=>setLayout('list')}><List size={19}/></button></div></div>
       {loaded&&!error&&!copies.length&&<div className="empty-state">Your shelves are ready. Start with a batch of box photos.<div className="import-actions"><button className="primary-action" onClick={onAdd}>Import your first puzzles</button></div></div>}
       {loaded&&!error&&copies.length>0&&!visible.length&&<div className="empty-state">No puzzles match your search or filters.<div className="import-actions"><button onClick={clearFilters}>Clear filters</button></div></div>}
-      <div className={`puzzle-grid private-grid ${layout==='list'?'list-view':''}`}>{visible.map(copy=><button data-testid="private-copy" data-copy-id={copy.id} className="puzzle-card" key={copy.id} onClick={()=>open(copy)}><div className={`collection-art ${copy.uses_studio?'studio-surface':''}`} data-background={copy.studio_background}>{copy.image_url?<img src={copy.image_url} alt={`Box photo of ${copy.title}`} loading="lazy" decoding="async"/>:<span>No box photo</span>}</div><div className="puzzle-copy"><strong>{copy.title}</strong><span>{copy.manufacturer?.trim()||'Unknown manufacturer'}</span><small><span className="piece-symbol">✣</span> {copy.piece_count?Number(copy.piece_count).toLocaleString():'Unknown'} pieces <span className="copy-dot">·</span> {copy.release_year??'Private copy'}</small></div></button>)}</div>
+      <div className={`puzzle-grid private-grid ${layout==='list'?'list-view':''}`}>{visible.map(copy=>{const cover=resolveCover(copy,coverSettings);return <button data-testid="private-copy" data-copy-id={copy.id} className="puzzle-card" key={copy.id} onClick={()=>open(copy)}><CollectionCover url={cover.url} title={copy.title} studio={cover.studio} background={copy.studio_background}/><div className="puzzle-copy"><strong>{copy.title}</strong><span>{copy.manufacturer?.trim()||'Unknown manufacturer'}</span><small><span className="piece-symbol">✣</span> {copy.piece_count?Number(copy.piece_count).toLocaleString():'Unknown'} pieces <span className="copy-dot">·</span> {copy.release_year??'Private copy'}</small></div></button>;})}</div>
+      </>}
     </>}
   </div>;
 }
