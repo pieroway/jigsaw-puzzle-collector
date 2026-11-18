@@ -2,6 +2,6 @@
 <phpunit bootstrap="vendor/autoload.php" colors="true" failOnWarning="true">
   <testsuites>
     <testsuite name="unit"><file>tests/SmokeTest.php</file><file>tests/ImageDeliveryTest.php</file><file>tests/ImportRulesTest.php</file><file>tests/PreprocessingTest.php</file><file>tests/BatchDeletionTest.php</file><file>tests/HomeSummaryTest.php</file><file>tests/CopyRulesTest.php</file><file>tests/CopyDeletionTest.php</file></testsuite>
-    <testsuite name="integration"><file>tests/IntegrationTest.php</file><file>tests/CopyPhotosIntegrationTest.php</file><file>tests/ImportApiTest.php</file></testsuite>
+    <testsuite name="integration"><file>tests/IntegrationTest.php</file><file>tests/CopyPhotosIntegrationTest.php</file><file>tests/ImportApiTest.php</file><file>tests/ImportRecognitionTest.php</file></testsuite>
   </testsuites>
 </phpunit>

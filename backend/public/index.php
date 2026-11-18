@@ -92,8 +92,13 @@ try {
             if ($action==='commit') respond($service->commit($id,$owner));
         }
     }
-    if (preg_match('#^/api/import-items/([1-9][0-9]*)(?:/(approve|reject|retry|image|original|original-image|source-image|processed-image|catalogue-image|studio-image|studio-thumbnail|preprocessing/(?:prepare|accept|reject|studio)))?$#',$path,$m)) {
+    if (preg_match('#^/api/import-items/([1-9][0-9]*)(?:/(approve|reject|retry|identify|image|original|original-image|source-image|processed-image|catalogue-image|studio-image|studio-thumbnail|preprocessing/(?:prepare|accept|reject|studio)))?$#',$path,$m)) {
         $id=(int)$m[1]; $action=$m[2] ?? '';
+        if ($method==='POST'&&$action==='identify') {
+            if (!Jigsaw\GeminiRecognition::enabled()) throw new HttpError(503,'AI identification is currently unavailable.');
+            $recognition = new Jigsaw\ImportRecognition($db,new ImageStore(getenv('PRIVATE_STORAGE_PATH') ?: '/var/lib/jigsaw/photos'),Jigsaw\GeminiRecognition::identify(...));
+            respond($recognition->identify($id,$owner,input()));
+        }
         if ($method==='PATCH'&&$action==='') respond($service->edit($id,$owner,input()));
         if ($method==='POST'&&in_array($action,['approve','reject','retry'],true)) respond($service->action($id,$owner,$action));
         if ($method==='POST'&&str_starts_with($action,'preprocessing/')) respond($service->photoAction($id,$owner,substr($action,14),input()));

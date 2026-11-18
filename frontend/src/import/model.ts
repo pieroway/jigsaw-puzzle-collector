@@ -13,7 +13,7 @@ export type ImportItem = {
   suggestion: (Fields & { provider: string; source: string; confidence: string; catalogue_verified: boolean; photo_notes: string | null; evidence: string }) | null;
   duplicates: { exact_photo: { id: number; batch_id: number }[]; identity: number[]; editions: { id: number; title: string; catalogue_verified: boolean }[] };
 };
-export type Batch = { id: number; created_at: string; items: ImportItem[]; summary: Record<string, number>; errors?: { id: number; error: string }[] };
+export type Batch = { ai_recognition_enabled?: boolean; id: number; created_at: string; items: ImportItem[]; summary: Record<string, number>; errors?: { id: number; error: string }[] };
 export function counts(items: { state: string; suggestion?: { title: string | null } | null }[]): Record<string, number> {
   const result: Record<string, number> = { uploaded: items.length, identified: 0, queued: 0, processing: 0, image_review:0, needs_review: 0, approved: 0, imported: 0, failed: 0, rejected: 0 };
   for (const item of items) { result[item.state]++; if (item.suggestion?.title) result.identified++; }

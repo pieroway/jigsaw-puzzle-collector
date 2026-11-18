@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { api, session, type Session } from './api';
 import { toDraft, reviewPayload, type Batch, type ImportItem } from './model';
 import './import.css';
+import { AiRecognition, type RecognitionField } from './AiRecognition';
 import { ImageReview } from './ImageReview';
 import {DeleteBatchButton} from './DeleteBatchButton';
 import {PhotoFilePicker} from './PhotoFilePicker';
@@ -103,7 +104,7 @@ export function ImportWorkspace({ onViewCollection, onSession,initialBatchId }: 
     {notice && <p role="status">{notice}</p>}
     {!account?.user ? <p>Log in using the main header before adding puzzles.</p> : <>
       <div className="import-account"><span>{account.user.email}</span></div>
-      <div className="import-notice"><strong>Offline fixture identification · no AI service</strong><p>Only the ten supplied reference photos have fixture suggestions. Other images start with unknown fields for you to fill in. Nothing is sent to a third party or published to a public catalogue.</p></div>
+      <div className="import-notice"><strong>Photo identification</strong><p>Only the ten supplied reference photos have fixture suggestions. You can fill in missing fields yourself. Photos are sent to Google only when you choose AI identification.</p></div>
       <div className="import-actions"><button className="primary-action" disabled={busy} onClick={() => void task(async () => { const value = await api<{ id: number }>('/import-batches', 'POST', { client_key: retryKey() }); await list(); await load(value.id); setPending([]); })}>New photo batch</button><button disabled={busy} onClick={onViewCollection}>View private collection</button></div>
       {!!batches.length && <label>Resume batch<select aria-label="Resume batch" disabled={busy} value={batch?.id ?? ''} onChange={e => void task(async () => { setPending([]); await load(Number(e.target.value)); })}>{batches.map(x => <option value={x.id} key={x.id}>Batch {x.id} · {x.created_at} UTC</option>)}</select></label>}
       {batch&&<DeleteBatchButton key={batch.id} id={batch.id} disabled={busy} onDelete={deleteBatch}/>}
@@ -124,23 +125,33 @@ export function ImportWorkspace({ onViewCollection, onSession,initialBatchId }: 
           <button className="primary-action" disabled={busy || dirty.size > 0 || imageDirty.size > 0} onClick={() => void task(async () => { let result = await api<Batch>(`/import-batches/${batch.id}/commit`,'POST'); show(result); while (result.summary.approved > 0) { result = await api<Batch>(`/import-batches/${batch.id}/commit`,'POST'); show(result); } setNotice((result.summary.removed??0)>0?`${result.summary.imported-result.summary.removed} copies remain from this batch. ${result.summary.removed} removed copies will not be recreated.`:`${result.summary.imported} private copies saved. Retrying will not add extra copies.`); })}>Import approved copies</button>
         </div>
         {pending.map(item => <div className="setting-card" key={item.key}><strong>{item.name}</strong><p role={item.error ? 'alert' : 'status'}>{item.error ?? 'Uploading…'}</p>{item.state === 'failed' && <button disabled={busy} onClick={() => { if (item.file) void upload([item.file],item); }}>Retry upload</button>}</div>)}
-        <div className="review-list">{batch.items.map(item => <ReviewCard key={item.id} item={item} busy={busy} onImageDirty={value => setImageDirty(old => { if (old.has(item.id) === value) return old; const next = new Set(old); if (value) next.add(item.id); else next.delete(item.id); return next; })} photoAction={async (action,data) => { await task(async () => { await refreshItem(await api<ImportItem>(`/import-items/${item.id}/preprocessing/${action}`,'POST',data)); if (action !== 'prepare') await process(batch.id); }); }} onDirty={() => setDirty(old => new Set(old).add(item.id))} save={async data => { await task(async () => { await refreshItem(await api<ImportItem>(`/import-items/${item.id}`,'PATCH',data)); setDirty(old => { const next = new Set(old); next.delete(item.id); return next; }); }); }} action={async action => { await task(async () => { await refreshItem(await api<ImportItem>(`/import-items/${item.id}/${action}`,'POST')); if (action === 'retry') await process(batch.id); }); }} retryUpload={file => void upload([file],{ key: item.client_key, name: item.filename, state: 'failed' })} />)}</div>
+        <div className="review-list">{batch.items.map(item => <ReviewCard key={item.id} item={item} busy={busy} aiEnabled={batch.ai_recognition_enabled} onImageDirty={value => setImageDirty(old => { if (old.has(item.id) === value) return old; const next = new Set(old); if (value) next.add(item.id); else next.delete(item.id); return next; })} photoAction={async (action,data) => { await task(async () => { await refreshItem(await api<ImportItem>(`/import-items/${item.id}/preprocessing/${action}`,'POST',data)); if (action !== 'prepare') await process(batch.id); }); }} onDirty={() => setDirty(old => new Set(old).add(item.id))} save={async data => { await task(async () => { await refreshItem(await api<ImportItem>(`/import-items/${item.id}`,'PATCH',data)); setDirty(old => { const next = new Set(old); next.delete(item.id); return next; }); }); }} action={async action => { await task(async () => { await refreshItem(await api<ImportItem>(`/import-items/${item.id}/${action}`,'POST')); if (action === 'retry') await process(batch.id); }); }} retryUpload={file => void upload([file],{ key: item.client_key, name: item.filename, state: 'failed' })} />)}</div>
       </>}
     </>}
   </div>;
 }
 
-export function ReviewCard({ item, busy, save, action, retryUpload, photoAction, onImageDirty, onDirty = () => {} }: { item: ImportItem; busy: boolean; photoAction?: (action:string,data:object) => Promise<void>; onImageDirty?: (dirty:boolean) => void; onDirty?: () => void; save: (data: object) => Promise<void>; action: (name: string) => Promise<void>; retryUpload: (file: File) => void }) {
+export function ReviewCard({ item, busy, save, action, retryUpload, photoAction, aiEnabled, onImageDirty, onDirty = () => {} }: { item: ImportItem; busy: boolean; aiEnabled?: boolean; photoAction?: (action:string,data:object) => Promise<void>; onImageDirty?: (dirty:boolean) => void; onDirty?: () => void; save: (data: object) => Promise<void>; action: (name: string) => Promise<void>; retryUpload: (file: File) => void }) {
   const [draft,setDraft] = useState(() => toDraft(item.fields)); const [reviewed,setReviewed] = useState(item.reviewed);
   const [edition,setEdition] = useState(item.linked_edition_id?.toString() ?? '');
   useEffect(() => { setDraft(toDraft(item.fields)); setReviewed(item.reviewed); setEdition(item.linked_edition_id?.toString() ?? ''); }, [item.fields?.title,item.fields?.manufacturer,item.fields?.pieces,item.fields?.product_number,item.fields?.release_year,item.reviewed,item.linked_edition_id]);
   const editable = ['needs_review','approved'].includes(item.state);
+  const recognitionRevision = item.preprocessing ? `${item.preprocessing.revision}:${item.preprocessing.decision}` : 'original';
   return <article className="review-card" data-testid="import-item">
     {item.image_url && (!photoAction || !item.preprocessing) && <a href={`/api/import-items/${item.id}/original`} aria-label={`Download original ${item.filename}`}><img src={item.image_url} alt={`Puzzle box: ${item.filename}`} loading="lazy" /></a>}
     <div className="review-content"><h2>{item.filename}</h2><span className="import-state">{item.copy_deleted?'Removed from collection':item.state.replace('_',' ')}</span>{item.copy_deleted&&<p>This is retained import history. Retrying import will not recreate the deleted copy.</p>}{photoAction && <ImageReview item={item} busy={busy} run={photoAction} onDirty={onImageDirty}/>}
       {item.error && <p className="import-error" role="alert">{item.error}</p>}
       {item.suggestion && <div className="evidence"><strong>Unverified suggestions · {item.suggestion.confidence} fixture confidence</strong><p>Source: {item.suggestion.provider} / {item.suggestion.source}. Not catalogue verified.</p>{item.suggestion.photo_notes && <p>Visible photo notes (fixture transcription): {item.suggestion.photo_notes}</p>}<p>Compare every field with the photo. Blank means unknown.</p></div>}
       {(item.duplicates.exact_photo.length > 0 || item.duplicates.identity.length > 0) && <p className="duplicate-note">Possible duplicate: {item.duplicates.exact_photo.length > 0 ? `exact SHA-256 photo match with photo(s) ${item.duplicates.exact_photo.map(x => x.id).join(', ')}` : `matching identity with photo(s) ${item.duplicates.identity.join(', ')}`}. Nothing was removed. Importing this record keeps a separate physical copy.</p>}
+      {aiEnabled && editable && item.fields && <AiRecognition
+        key={recognitionRevision}
+        itemId={item.id} revision={recognitionRevision} busy={busy}
+        apply={(field: RecognitionField,value: string) => {
+          setDraft(current => ({ ...current, [field]: value }));
+          setReviewed(false);
+          onDirty();
+        }}
+      />}
       {item.fields && <form onSubmit={e => { e.preventDefault(); void save({ ...reviewPayload(draft), reviewed, linked_edition_id: edition ? Number(edition) : null }); }}>
         <div className="review-fields">{(['title','manufacturer','pieces','product_number','release_year'] as const).map(key => <label key={key}>{({ title:'Title', manufacturer:'Manufacturer / brand', pieces:'Pieces', product_number:'Product number', release_year:'Release year' })[key]}<input type={key === 'pieces' || key === 'release_year' ? 'number' : 'text'} aria-label={key === 'title' ? 'Title' : undefined} value={draft[key]} placeholder="Unknown" disabled={!editable || busy} onChange={e => { setDraft({ ...draft, [key]:e.target.value }); setReviewed(false); onDirty(); }} /></label>)}</div>
         {!!item.duplicates.editions.length && <label>Catalogue link<select disabled={!editable || busy} value={edition} onChange={e => { setEdition(e.target.value); setReviewed(false); onDirty(); }}><option value="">Keep or match my private draft edition</option>{item.duplicates.editions.map(x => <option value={x.id} key={x.id}>{x.title} · {x.catalogue_verified ? 'Catalogue verified' : 'My private draft'}</option>)}</select></label>}

@@ -220,7 +220,7 @@ final class ImportService {
         $row=$this->batch($batch,$owner); $items=$this->query('SELECT i.*,EXISTS(SELECT 1 FROM deleted_owned_copies d WHERE d.import_item_id=i.id AND d.user_id=?) AS copy_deleted FROM import_items i WHERE batch_id=? ORDER BY id',[$owner,$batch])->fetchAll();
         $summary=array_fill_keys(['uploaded','identified','queued','processing','image_review','needs_review','approved','imported','failed','rejected','removed'],0);
         foreach ($items as $item) { $summary['uploaded']++; $summary[$item['state']]++;if(!empty($item['copy_deleted']))$summary['removed']++; if ($item['suggestion'] && json_decode($item['suggestion'],true)['title']!==null) $summary['identified']++; }
-        return ['id'=>$batch,'created_at'=>$row['created_at'],'summary'=>$summary,'items'=>array_map(fn($item)=>$this->serialize($item,$owner),$items)];
+        return ['id'=>$batch,'created_at'=>$row['created_at'],'summary'=>$summary,'ai_recognition_enabled'=>GeminiRecognition::enabled(),'items'=>array_map(fn($item)=>$this->serialize($item,$owner),$items)];
     }
     public function image(int $id,int $owner,bool $original=false,string $variant='image'): array {
         $item=$this->item($id,$owner); $image=$this->query('SELECT * FROM private_images WHERE id=? AND user_id=?',[$item['image_id'],$owner])->fetch();

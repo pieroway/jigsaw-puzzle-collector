@@ -8,5 +8,6 @@ services:
     environment:
       DB_NAME: jigsaw_test
       SESSION_COOKIE_SECURE: "0"
+      GEMINI_API_KEY: ""
   frontend:
     ports: !reset []
